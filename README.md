@@ -12,18 +12,17 @@ La Montérégie représente près de 40% des superficies de maïs-grain de la pr
 
 - Extraire et analyser les indices spectraux (NDVI, EVI, NDWI, LAI) pour caractériser la dynamique spatio-temporelle du maïs
 - Entraîner et comparer différents modèles d'apprentissage automatique : Random Forest, XGBoost, SVM et TabResNet
-- Évaluer la performance des modèles via des indicateurs statistiques (R², RMSE, MAE)
-- Produire des cartes de rendement estimées à l'échelle parcellaire et régionale
+- Évaluer la performance des modèles via des indicateurs statistiques (R², RMSE, MAE) et produire des cartes de rendement estimées à l'échelle parcellaire et régionale
 
 ## Méthodologie
 
 ### Données mobilisées
 
-- **Données satellitaires** : Sentinel-2, Landsat 5/7/8 (via Google Earth Engine)
-- **Données climatiques** : Stations météorologiques d'Environnement Canada (2010-2023)
-- **Données pédologiques** : Banque de données pédologiques du Québec (BDPQ)
-- **Observations terrain** : 10 parcelles expérimentales (F1-F10) avec mesures de rendement, biomasse et humidité du sol
-- **Données historiques** : Statistiques de rendement FADQ (2010-2023)
+- Données satellitaires : Sentinel-2, Landsat 5/7/8 (via Google Earth Engine)
+- Données climatiques : Stations météorologiques d'Environnement Canada (2010-2023)
+- Données pédologiques : Banque de données pédologiques du Québec (BDPQ)
+- Observations terrain : 10 parcelles expérimentales (F1-F10) avec mesures de rendement, biomasse et humidité du sol
+- Données historiques : Statistiques de rendement FADQ (2010-2023)
 
 ### Indices spectraux calculés
 
