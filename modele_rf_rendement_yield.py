@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 print("Modèle Random Forest pour la prédiction des rendements agricoles")
 print("Intégration des indices de télédétection et analyse spatiale\n")
 
-# ========== 1. CHARGEMENT ET EXPLORATION DES DONNÉES ==========
+################################### CHARGEMENT ET EXPLORATION DES DONNÉES ###########################################
 data = pd.read_csv(r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv')
 print(f"Dimensions des données: {data.shape[0]} lignes x {data.shape[1]} colonnes")
 print(f"\nAperçu des colonnes disponibles:")
@@ -31,7 +31,7 @@ print(f"Min: {data['yield_tpha'].min():.2f} t/ha | Max: {data['yield_tpha'].max(
 print(f"\n--- Distribution temporelle ---")  
 print(data['year'].value_counts().sort_index())
 
-# ========== 2. PRÉPARATION DES INDICES DE TÉLÉDÉTECTION ==========
+############################### PRÉPARATION DES INDICES DE TÉLÉDÉTECTION ###################################################
 # Note: Ces indices seront ajoutés lorsque les données satellitaires seront disponibles
 # Pour l'instant, on simule leur structure pour l'architecture du modèle
 
@@ -49,7 +49,7 @@ print("- NDWI: Indice d'eau normalisé")
 print("- EVI: Indice de végétation amélioré")
 print("- LAI: Indice de surface foliaire")
 
-# ========== 3. ENCODAGE DES VARIABLES CATÉGORIELLES ==========
+###################### ENCODAGE DES VARIABLES CATÉGORIELLES ##########################################
 categorical_vars = ['drainage', 'station_name', 'Field']
 label_encoders = {}
 
@@ -59,7 +59,7 @@ for var in categorical_vars:
         data[f'{var}_encoded'] = le.fit_transform(data[var].astype(str))
         label_encoders[var] = le
 
-# ========== 4. SÉLECTION ET PRÉPARATION DES FEATURES ==========
+########################### SÉLECTION ET PRÉPARATION DES FEATURES #################################
 target = 'yield_tpha'
 
 # Liste des features à utiliser
@@ -82,7 +82,7 @@ print(f"\n--- Variables utilisées pour la prédiction ---")
 print(f"Nombre de features: {len(feature_columns)}")
 print(f"Features: {feature_columns}")
 
-# ========== 5. GESTION DES VALEURS MANQUANTES ET NORMALISATION ==========
+################################ GESTION DES VALEURS MANQUANTES ET NORMALISATION ####################################
 print("\n--- Traitement des valeurs manquantes ---")
 missing_counts = X_raw.isnull().sum()
 print(missing_counts[missing_counts > 0])
@@ -101,7 +101,7 @@ X_scaled = pd.DataFrame(
     index=X_imputed.index
 )
 
-# ========== 6. DIVISION DES DONNÉES ==========
+########################### DIVISION DES DONNÉES ##############################
 X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.25, random_state=42
 )
@@ -127,7 +127,7 @@ rf_model = RandomForestRegressor(
 rf_model.fit(X_train, y_train)
 print()
 
-# ========== 8. ÉVALUATION DU MODÈLE ==========
+########################### ÉVALUATION DU MODÈLE ##################################
 print("\n--- Évaluation des performances ---")
 y_pred_train = rf_model.predict(X_train)
 y_pred_test = rf_model.predict(X_test)
@@ -164,10 +164,10 @@ cv_scores = cross_val_score(
 print(f"\nValidation croisée (5-fold):")
 print(f"  R² moyen = {cv_scores.mean():.3f} (+/- {cv_scores.std():.3f})")
 
-# ========== 9. VISUALISATIONS ==========
+############################ VISUALISATIONS ############################################
 print("\n--- Génération des visualisations ---")
 
-# 9.1 Diagramme de dispersion observé vs prédit
+# Diagramme de dispersion observé vs prédit
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # Ensemble d'entraînement
@@ -223,7 +223,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/resi
 print("Graphique sauvegardé: residus_analyse.png")
 plt.show()
 
-# ========== 10. IMPORTANCE DES VARIABLES ==========
+############################ IMPORTANCE DES VARIABLES ######################################
 print("\n--- Importance des variables ---")
 
 importances = rf_model.feature_importances_
@@ -249,7 +249,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/impo
 print("\nGraphique sauvegardé: importance_variables.png")
 plt.show()
 
-# ========== 11. ANALYSE SHAP ==========
+########################## ANALYSE SHAP ###################################
 print("\n--- Analyse SHAP ---")
 print("Calcul des valeurs SHAP en cours...")
 
@@ -274,7 +274,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/shap
 print("Graphique sauvegardé: shap_distribution.png")
 plt.show()
 
-# ========== 12. CARTOGRAPHIE DES RENDEMENTS ==========
+############################ CARTOGRAPHIE DES RENDEMENTS ###################################
 print("\n--- Génération de la cartographie ---")
 
 # Prédiction sur l'ensemble complet
@@ -328,7 +328,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/cart
 print("Graphique sauvegardé: carte_erreurs.png")
 plt.show()
 
-# ========== 13. ANALYSE TEMPORELLE ==========
+############################### ANALYSE TEMPORELLE ################################
 print("\n--- Analyse temporelle ---")
 
 temporal_analysis = data.groupby('year').agg({
@@ -351,7 +351,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/evol
 print("Graphique sauvegardé: evolution_temporelle.png")
 plt.show()
 
-# ========== 14. EXPORT DES RÉSULTATS ==========
+##################################### EXPORT DES RÉSULTATS ######################################
 print("\n--- Export des résultats ---")
 
 results_df = data[['region', 'zone', 'year', 'Field', 'yield_tpha', 
@@ -374,17 +374,3 @@ summary_df = pd.DataFrame([summary_stats])
 summary_df.to_csv(r'/home/snabraham6/#modele_deep_learning/random_f_model/données/resume_modele.csv', index=False)
 print("Fichier sauvegardé: resume_modele.csv")
 
-print("\n" + "="*70)
-print("ANALYSE TERMINÉE AVEC SUCCÈS")
-print("="*70)
-print("\nFichiers générés dans /mnt/user-data/outputs/:")
-print("  - dispersion_rendement.png")
-print("  - residus_analyse.png")
-print("  - importance_variables.png")
-print("  - shap_importance.png")
-print("  - shap_distribution.png")
-print("  - cartographie_rendements.png")
-print("  - carte_erreurs.png")
-print("  - evolution_temporelle.png")
-print("  - predictions_rendements.csv")
-print("  - resume_modele.csv")
