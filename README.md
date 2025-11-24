@@ -18,18 +18,18 @@ La Montérégie représente près de 40% des superficies de maïs-grain de la pr
 
 ### Données mobilisées
 
-- Données satellitaires : Sentinel-2, Landsat 5/7/8 (via Google Earth Engine)
-- Données climatiques : Stations météorologiques d'Environnement Canada (2010-2023)
-- Données pédologiques : Banque de données pédologiques du Québec (BDPQ)
-- Observations terrain : 10 parcelles expérimentales (F1-F10) avec mesures de rendement, biomasse et humidité du sol
-- Données historiques : Statistiques de rendement FADQ (2010-2023)
+- **Données satellitaires** : Sentinel-2, Landsat 5/7/8 (via Google Earth Engine)
+- **Données climatiques** : Stations météorologiques d'Environnement Canada (2010-2023)
+- **Données pédologiques** : Banque de données pédologiques du Québec (BDPQ)
+- **Observations terrain** : 10 parcelles expérimentales (F1-F10) avec mesures de rendement, biomasse et humidité du sol
+- **Données historiques** : Statistiques de rendement FADQ (2010-2023)
 
 ### Indices spectraux calculés
 
-NDVI : (NIR - Red) / (NIR + Red) pour la Vigueur végétale
-EVI : 2.5 × (NIR - Red) / (NIR + 6 × Red - 7.5 × Blue + 1) pour la biomasse en zones denses
-NDWI : (NIR - SWIR) / (NIR + SWIR) pour la stress hydrique 
-LAI : Calculé à partir de NIR et Red pour la surface foliaire 
+- **NDVI** : (NIR - Red) / (NIR + Red) pour la Vigueur végétale
+- **EVI** : 2.5 × (NIR - Red) / (NIR + 6 × Red - 7.5 × Blue + 1) pour la biomasse en zones denses
+- **NDWI** : (NIR - SWIR) / (NIR + SWIR) pour la stress hydrique 
+- **LAI** : Calculé à partir de NIR et Red pour la surface foliaire 
 
 ### Modèles d'apprentissage automatique
 
@@ -42,10 +42,10 @@ Quatre algorithmes ont été développés et comparés :
 
 ### Validation
 
-- Division temporelle : entraînement 2010-2020, test 2021-2023
-- Validation croisée à 5 plis (k-fold)
-- Métriques d'évaluation : R², RMSE, MAE
-- Analyse SHAP pour l'interprétabilité des modèles
+- **Division temporelle** : entraînement 2010-2020, test 2021-2023
+- **Validation croisée** à 5 plis (k-fold)
+- **Métriques d'évaluation** : R², RMSE, MAE
+- **Analyse SHAP** pour l'interprétabilité des modèles
 
 ## Résultats principaux
 
