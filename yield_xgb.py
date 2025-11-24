@@ -17,8 +17,7 @@ print("Modèle XGBoost - Prédiction des rendements agricoles")
 print("Intégration des indices de végétation Sentinel-2 RÉELS")
 print("=" * 80)
 
-# ----- SECTION 1: CHARGEMENT ET PRÉPARATION DES DONNÉES -----
-
+########################### CHARGEMENT ET PRÉPARATION DES DONNÉES #######################################
 csv_path = (r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv')
 df = pd.read_csv(csv_path)
 
@@ -39,8 +38,7 @@ df['field_encoded'] = le_field.fit_transform(df['Field'].fillna('Unknown'))
 df['year_normalized'] = (df['year'] - df['year'].min()) / (df['year'].max() - df['year'].min())
 df['year_squared'] = df['year_normalized'] ** 2
 
-# ----- SECTION 2: INTÉGRATION DES INDICES DE VÉGÉTATION SENTINEL-2 (RÉELS) -----
-
+####################################### INTÉGRATION DES INDICES DE VÉGÉTATION ###############################""
 print("\n" + "=" * 80)
 print("INTÉGRATION DES INDICES DE VÉGÉTATION SENTINEL-2")
 print("=" * 80)
@@ -176,10 +174,9 @@ except Exception as e:
     df['LAI'] = np.random.uniform(1.0, 6.0, len(df))
     vegetation_indices = ['NDVI', 'NDWI', 'EVI', 'LAI']
     available_indices = vegetation_indices
-    print("   Indices simulés générés (à remplacer par données réelles)")
+    print()
 
-# ----- SECTION 3: SÉLECTION DES FEATURES -----
-
+##################################### SÉLECTION DES FEATURES ###########################################
 target = 'yield_tpha'
 features_to_exclude = [
     'yield_kg_ha', 'yield_tpha', 'region', 'zone', 
@@ -239,8 +236,7 @@ X_scaled = pd.DataFrame(
 print(f"✓ Normalisation effectuée")
 print(f"\nMatrice finale: {X_scaled.shape}")
 
-# ----- SECTION 4: DIVISION TRAIN/TEST -----
-
+######################################## DIVISION TRAIN/TEST ################################################
 print(f"\n{'='*80}")
 print(f"DIVISION DES DONNÉES")
 print(f"{'='*80}")
@@ -252,8 +248,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(f"\nÉchantillons d'entraînement: {len(X_train)} ({len(X_train)/len(X_scaled)*100:.1f}%)")
 print(f"Échantillons de test:        {len(X_test)} ({len(X_test)/len(X_scaled)*100:.1f}%)")
 
-# ----- SECTION 5: CONFIGURATION ET ENTRAÎNEMENT DU MODÈLE -----
-
+################################# CONFIGURATION ET ENTRAÎNEMENT DU MODÈLE #############################################
 xgb_params = {
     'learning_rate': 0.03,
     'max_depth': 4,
@@ -289,8 +284,7 @@ model = xgb.train(
     evals_result=evals_result
 )
 
-# ----- SECTION 6: ÉVALUATION DU MODÈLE -----
-
+########################################## ÉVALUATION DU MODÈLE ########################################
 y_pred_train = model.predict(dtrain)
 y_pred_test = model.predict(dtest)
 
@@ -314,23 +308,22 @@ print(f"  RMSE = {rmse_test:.3f} t/ha")
 print(f"  MAE = {mae_test:.3f} t/ha")
 print(f"  RRMSE = {rrmse_test:.2f}%")
 
-# ----- SECTION 7: VISUALISATIONS -----
-
+################################ VISUALISATIONS ##########################################
 # Courbe d'apprentissage
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-# 7.1 Courbe d'apprentissage
+#Courbe d'apprentissage
 ax1 = axes[0, 0]
 epochs = len(evals_result['train']['rmse'])
 ax1.plot(range(epochs), evals_result['train']['rmse'], label='Entraînement', linewidth=2)
 ax1.plot(range(epochs), evals_result['test']['rmse'], label='Test', linewidth=2)
 ax1.set_xlabel('Itérations', fontsize=11)
 ax1.set_ylabel('RMSE (t/ha)', fontsize=11)
-ax1.set_title('Courbe d\'apprentissage', fontsize=12, fontweight='bold')
+ax1.set_title('Figure a : courbe d\'apprentissage', fontsize=10, fontweight='bold')
 ax1.legend()
 ax1.grid(True, alpha=0.3)
 
-# 7.2 Observé vs Prédit
+#Observé vs Prédit
 ax2 = axes[0, 1]
 ax2.scatter(y_test, y_pred_test, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
 min_val = min(y_test.min(), y_pred_test.min())
@@ -338,36 +331,34 @@ max_val = max(y_test.max(), y_pred_test.max())
 ax2.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Identité')
 ax2.set_xlabel('Rendement observé (t/ha)', fontsize=11)
 ax2.set_ylabel('Rendement prédit (t/ha)', fontsize=11)
-ax2.set_title(f'Validation du modèle (R² = {r2_test:.3f})', fontsize=12, fontweight='bold')
+ax2.set_title(f'Figure b : Validation du modèle (R² = {r2_test:.3f})', fontsize=10, fontweight='bold')
 ax2.legend()
 ax2.grid(True, alpha=0.3)
 
-# 7.3 Distribution des résidus
+#Distribution des résidus
 ax3 = axes[1, 0]
 residuals = y_test - y_pred_test
 ax3.hist(residuals, bins=20, edgecolor='black', alpha=0.7)
 ax3.axvline(0, color='red', linestyle='--', linewidth=2)
 ax3.set_xlabel('Résidus (t/ha)', fontsize=11)
 ax3.set_ylabel('Fréquence', fontsize=11)
-ax3.set_title('Distribution des résidus', fontsize=12, fontweight='bold')
+ax3.set_title('Figure c : Distribution des résidus', fontsize=10, fontweight='bold')
 ax3.grid(True, alpha=0.3)
 
-# 7.4 Résidus vs Prédit
+#Résidus vs Prédit
 ax4 = axes[1, 1]
 ax4.scatter(y_pred_test, residuals, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
 ax4.axhline(0, color='red', linestyle='--', linewidth=2)
 ax4.set_xlabel('Rendement prédit (t/ha)', fontsize=11)
 ax4.set_ylabel('Résidus (t/ha)', fontsize=11)
-ax4.set_title('Analyse des résidus', fontsize=12, fontweight='bold')
+ax4.set_title('Figure d : Analyse des résidus', fontsize=10, fontweight='bold')
 ax4.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/fig_xgb/evaluation_modele_SENTINEL2.png', dpi=300, bbox_inches='tight')
-print(f"\n✓ Graphique sauvegardé: evaluation_modele_SENTINEL2.png")
 plt.show()
 
-# ----- SECTION 8: IMPORTANCE DES FEATURES -----
-
+###############################"" IMPORTANCE DES FEATURES ###################################
 print("\n" + "=" * 80)
 print("IMPORTANCE DES FEATURES")
 print("=" * 80)
@@ -378,66 +369,21 @@ importance_df = pd.DataFrame({
     'Importance': importance.values()
 }).sort_values('Importance', ascending=False)
 
-print("\nTop 10 des variables les plus importantes:")
+print("\nLes variables les plus importantes:")
 print(importance_df.head(10).to_string(index=False))
 
 plt.figure(figsize=(10, 6))
 plt.barh(importance_df['Feature'][:15], importance_df['Importance'][:15])
 plt.xlabel('Importance (Gain)', fontsize=12)
 plt.ylabel('Variables', fontsize=12)
-plt.title('Top 15 des variables les plus importantes', fontsize=13, fontweight='bold')
+plt.title('Les variables les plus importantes', fontsize=10, fontweight='bold')
 plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/fig_xgb/importance_features_SENTINEL2.png', dpi=300, bbox_inches='tight')
-print(f"\n✓ Graphique sauvegardé: importance_features_SENTINEL2.png")
+print()
 plt.show()
 
-# ----- SECTION 9: ANALYSE SHAP -----
-
-print("\n" + "=" * 80)
-print("ANALYSE SHAP - INTERPRÉTABILITÉ DU MODÈLE")
-print("=" * 80)
-
-try:
-    # Conversion du modèle pour SHAP
-    booster = model
-    booster.feature_names = list(X_train.columns)
-    
-    explainer = shap.TreeExplainer(booster)
-    shap_values = explainer.shap_values(X_test)
-
-    # Summary plot
-    plt.figure(figsize=(10, 8))
-    shap.summary_plot(shap_values, X_test, show=False, max_display=15)
-    plt.title('Impact des variables sur les prédictions (SHAP)', fontsize=13, fontweight='bold')
-    plt.tight_layout()
-    plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/fig_xgb/shap_summary_SENTINEL2.png', dpi=300, bbox_inches='tight')
-    print(f"\n✓ Graphique SHAP sauvegardé: shap_summary_SENTINEL2.png")
-    plt.show()
-
-    # Bar plot
-    plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_values, X_test, plot_type='bar', show=False, max_display=15)
-    plt.title('Importance SHAP des variables', fontsize=13, fontweight='bold')
-    plt.tight_layout()
-    plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/fig_xgb/shap_importance_SENTINEL2.png', dpi=300, bbox_inches='tight')
-    print(f"✓ Graphique SHAP sauvegardé: shap_importance_SENTINEL2.png")
-    plt.show()
-    
-    # Calcul des valeurs SHAP moyennes
-    shap_df = pd.DataFrame(shap_values, columns=X_test.columns)
-    mean_abs_shap = shap_df.abs().mean().sort_values(ascending=False)
-    
-    print("\nTop 10 des impacts SHAP moyens:")
-    for i, (feat, val) in enumerate(mean_abs_shap.head(10).items(), 1):
-        print(f"  {i}. {feat}: {val:.4f}")
-        
-except Exception as e:
-    print(f"\nProblème avec l'analyse SHAP: {str(e)}")
-    print("   Utilisation de l'importance native du modèle à la place.")
-
-# ----- SECTION 10: ANALYSE DES INDICES DE VÉGÉTATION -----
-
+########################## ANALYSE DES INDICES DE VÉGÉTATION #######################
 if available_indices:
     print("\n" + "=" * 80)
     print("CORRÉLATION INDICES DE VÉGÉTATION - RENDEMENTS")
@@ -472,30 +418,3 @@ if available_indices:
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/fig_xgb/correlation_vegetation_SENTINEL2.png', dpi=300, bbox_inches='tight')
     print(f"\n✓ Graphique de corrélation sauvegardé: correlation_vegetation_SENTINEL2.png")
     plt.show()
-
-# ----- SECTION 11: RAPPORT FINAL -----
-
-print("\n" + "=" * 80)
-print("RÉSUMÉ DE L'ANALYSE")
-print("=" * 80)
-print(f"\nModèle: XGBoost avec {len(available_features)} variables")
-print(f"  → Dont 4 indices Sentinel-2 RÉELS (NDVI, NDWI, EVI, LAI)")
-print(f"\nPerformance (R² test): {r2_test:.4f}")
-print(f"Erreur moyenne (MAE): {mae_test:.3f} t/ha")
-print(f"Erreur relative (RRMSE): {rrmse_test:.2f}%")
-
-print(f"\nTop 3 variables importantes:")
-for i, row in importance_df.head(3).iterrows():
-    print(f"  {i+1}. {row['Feature']}: {row['Importance']:.2f}")
-
-print(f"\nFichiers générés:")
-print(f"  - evaluation_modele_SENTINEL2.png")
-print(f"  - importance_features_SENTINEL2.png")
-print(f"  - shap_summary_SENTINEL2.png")
-print(f"  - shap_importance_SENTINEL2.png")
-if available_indices:
-    print(f"  - correlation_vegetation_SENTINEL2.png")
-
-print("\n" + "=" * 80)
-print("ANALYSE TERMINÉE AVEC INDICES SENTINEL-2 RÉELS")
-print("=" * 80)
