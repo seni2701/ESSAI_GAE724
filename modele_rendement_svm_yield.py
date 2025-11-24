@@ -11,16 +11,14 @@ import matplotlib.pyplot as plt
 
 print("=== Modèle SVM - Prédiction des rendements (adapté au modèle RF) ===\n")
 
-# -------------------------------------------------------------------
-# 1. Chargement des données
-# -------------------------------------------------------------------
+# 
+############################# Chargement des données ################################################"
+# 
 data_path = r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv'
 df = pd.read_csv(data_path)
 print(f"Données chargées : {df.shape[0]} observations, {df.shape[1]} variables\n")
 
-# -------------------------------------------------------------------
-# 2. Feature engineering léger + sélection dynamique des features
-# -------------------------------------------------------------------
+########################## Sélection dynamique des features #######################
 # Variables dérivées simples
 if {'tmean', 'tmax', 'tmin', 'rain_mm', 'ppt_mm'}.issubset(df.columns):
     df['tmean2'] = df['tmean'] ** 2
@@ -47,9 +45,8 @@ if missing_features:
 
 print(f"Variables retenues : {available_features}\n")
 
-# -------------------------------------------------------------------
-# 3. Préparation des données
-# -------------------------------------------------------------------
+###################### Préparation des données ##################################
+
 needed = available_features + [target_col, 'Field']
 df_model = df[needed].copy()
 df_model = df_model.dropna(subset=[target_col])
@@ -59,9 +56,7 @@ y = df_model[target_col]
 fields = df_model['Field']
 years = df_model['year']
 
-# -------------------------------------------------------------------
-# 4. Split temporel
-# -------------------------------------------------------------------
+######################## Split temporel ###################################"
 train_mask = years <= 2020
 X_train, X_test = X[train_mask], X[~train_mask]
 y_train, y_test = y[train_mask], y[~train_mask]
@@ -69,9 +64,7 @@ fields_train = fields[train_mask]
 
 print(f"Données d'entraînement : {len(X_train)} | Test : {len(X_test)}\n")
 
-# -------------------------------------------------------------------
-# 5. Pipeline + GridSearch
-# -------------------------------------------------------------------
+############################### Pipeline et GridSearch ########################################
 pipeline = Pipeline([
     ('imputer', SimpleImputer(strategy='median')),
     ('scaler', StandardScaler()),
@@ -93,9 +86,7 @@ best_model = grid.best_estimator_
 print(f"\nMeilleurs paramètres : {grid.best_params_}")
 print(f"Meilleur score (CV)  : {grid.best_score_:.3f}\n")
 
-# -------------------------------------------------------------------
-# 6. Évaluation
-# -------------------------------------------------------------------
+############################## Évaluation du modèle ##################################################
 def metrics(y_true, y_pred):
     r2 = r2_score(y_true, y_pred)
     mae = mean_absolute_error(y_true, y_pred)
@@ -115,16 +106,12 @@ print("=" * 60)
 print(f"\nEntraînement (2010–2020): R²={r2_tr:.3f} | MAE={mae_tr:.3f} | RMSE={rmse_tr:.3f} | RRMSE={rrmse_tr:.2f}%")
 print(f"Test (2021–2023): R²={r2_te:.3f} | MAE={mae_te:.3f} | RMSE={rmse_te:.3f} | RRMSE={rrmse_te:.2f}%\n")
 
-# -------------------------------------------------------------------
-# 7. Validation croisée par champ
-# -------------------------------------------------------------------
+############################## Validation croisée par champ #####################################
 cv = GroupKFold(n_splits=5)
 cv_scores = cross_val_score(best_model, X_train, y_train, cv=cv, groups=fields_train, scoring='r2', n_jobs=-1)
 print(f"Validation croisée (GroupKFold): R² moyen={cv_scores.mean():.3f} ± {cv_scores.std():.3f}\n")
 
-# -------------------------------------------------------------------
-# 8. Visualisations simples
-# -------------------------------------------------------------------
+################################# Visualisations simples ############################################
 fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
 axes[0].scatter(y_train, y_train_pred, alpha=0.6, label=f'Train R²={r2_tr:.3f}')
@@ -146,9 +133,7 @@ axes[1].grid(alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-# -------------------------------------------------------------------
-# 8bis. Figures supplémentaires d'analyse
-# -------------------------------------------------------------------
+######################## Figures supplémentaires d'analyse ##############################################
 
 # Figure 1 : Analyse des résidus (distribution + scatter)
 residuals_train = y_train - y_train_pred
@@ -281,9 +266,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/svm_model/figures/Distribut
 print("✓ Graphique des prédictions sauvegardé")
 plt.show()
 
-# -------------------------------------------------------------------
-# 9. Validation par champ
-# -------------------------------------------------------------------
+########################################## Validation par champ ###########################################
 print("=" * 60)
 print("VALIDATION PAR CHAMP (Test)")
 print("=" * 60)
