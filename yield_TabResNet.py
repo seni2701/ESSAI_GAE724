@@ -76,7 +76,7 @@ except Exception as e:
     df['LAI'] = np.random.uniform(1.0, 6.0, len(df))
     print("\nIndices simulés générés")
 
-# --- 4) ENCODAGE DES VARIABLES CATÉGORIELLES ---
+################################# ENCODAGE DES VARIABLES CATÉGORIELLES ########################################
 print(f"\n{'='*70}")
 print("ENCODAGE DES VARIABLES CATÉGORIELLES")
 print("="*70)
@@ -91,7 +91,7 @@ for var in categorical_vars:
         label_encoders[var] = le
         print(f"  - Encodage de '{var}' -> '{var}_encoded'")
 
-# --- 5) Ingénierie des features ---
+################################## Ingénierie des features ###########################################
 features_df = df.copy()
 
 # Encodage zone et région
@@ -106,7 +106,7 @@ if {'tmean', 'tmax', 'tmin', 'rain_mm', 'ppt_mm'}.issubset(features_df.columns):
     features_df['ppt_ratio'] = features_df['rain_mm'] / (features_df['ppt_mm'] + 1e-6)
     print("\nVariables dérivées créées: tmean2, temp_range, rain_anomaly, ppt_ratio")
 
-# --- 6) Sélection des features ---
+################################# Sélection des features #########################################
 feature_candidates = [
     'region_cat', 'zone_cat', 'year',
     'g_pente_mo', 'tmean', 'tmax', 'tmin',
@@ -125,7 +125,7 @@ if missing_features:
 print(f"\n✓ Variables retenues : {len(available_features)} features")
 print(f"  {available_features}")
 
-# --- 7) Préparation X et y ---
+######################################### Préparation X et y #######################################
 X_raw = features_df[available_features].copy()
 y = features_df[target].copy()
 
@@ -153,7 +153,7 @@ X_scaled = pd.DataFrame(
     index=X_imputed.index
 )
 
-# --- 9) Split temporel (2010-2020 train, 2021-2023 test) ---
+################################# Division temporelle des données (2010-2020 train, 2021-2023 test)#########################################
 train_mask = years <= 2020
 X_train_df = X_scaled[train_mask]
 X_test_df = X_scaled[~train_mask]
@@ -166,7 +166,7 @@ print(f"{'='*70}")
 print(f"Entraînement (2010-2020): {len(X_train_df)} échantillons ({len(X_train_df)/len(X_scaled)*100:.1f}%)")
 print(f"Test (2021-2023): {len(X_test_df)} échantillons ({len(X_test_df)/len(X_scaled)*100:.1f}%)")
 
-# --- 10) Conversion en tenseurs PyTorch ---
+############################## Conversion en tenseurs PyTorch ###############################################
 X_train_tensor = torch.tensor(X_train_df.values, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train.values.reshape(-1, 1), dtype=torch.float32)
 X_test_tensor = torch.tensor(X_test_df.values, dtype=torch.float32)
@@ -576,49 +576,3 @@ results_export = cartography_df[['region', 'zone', 'year', 'Field',
 results_export['model_used'] = 'TabResNet'
 results_export.to_csv(r'/home/snabraham6/#modele_deep_learning/resnet_model/data/predictions_tabresnet.csv', index=False)
 print("\n  ✓ Résultats détaillés exportés")
-
-# --- 18) Rapport de synthèse ---
-print(f"\n{'='*70}")
-print("ANALYSE DE L'IMPACT DES INDICES DE VÉGÉTATION")
-print(f"{'='*70}")
-
-for idx_name in ['NDVI', 'NDWI', 'EVI', 'LAI']:
-    corr_obs = np.corrcoef(cartography_df[idx_name], cartography_df['yield_observed'])[0, 1]
-    corr_pred = np.corrcoef(cartography_df[idx_name], cartography_df['yield_predicted'])[0, 1]
-    print(f"\n{idx_name}:")
-    print(f"  Corrélation avec rendement observé:  {corr_obs:+.4f}")
-    print(f"  Corrélation avec rendement prédit:   {corr_pred:+.4f}")
-
-# Statistiques finales
-print(f"\n{'='*70}")
-print("RÉSUMÉ FINAL")
-print(f"{'='*70}")
-print(f"\nModèle: TabResNet (Architecture Ultra-Légère)")
-print(f"Architecture: {input_dim} → 16 (×1 bloc résiduel) → 1")
-print(f"Paramètres totaux: {sum(p.numel() for p in model.parameters())}")
-print(f"Ratio paramètres/observations: {sum(p.numel() for p in model.parameters()) / len(X_train_df):.1f}:1")
-
-print(f"\nPerformances sur l'entraînement (2010-2020):")
-print(f"  • R² Score:           {r2_train:.4f}")
-print(f"  • RMSE:               {rmse_train:.3f} t/ha")
-print(f"  • MAE:                {mae_train:.3f} t/ha")
-print(f"  • RRMSE:              {rrmse_train:.2f}%")
-
-print(f"\nPerformances sur le test (2021-2023):")
-print(f"  • R² Score:           {r2_test:.4f}")
-print(f"  • RMSE:               {rmse_test:.3f} t/ha")
-print(f"  • MAE:                {mae_test:.3f} t/ha")
-print(f"  • RRMSE:              {rrmse_test:.2f}%")
-
-print(f"\nRendement moyen observé (test):  {y_test.mean():.2f} t/ha")
-print(f"Rendement moyen prédit (test):   {y_test_pred.mean():.2f} t/ha")
-print(f"Différence:                      {abs(y_test.mean() - y_test_pred.mean()):.2f} t/ha")
-
-print(f"\n{'='*70}")
-print("ANALYSE TERMINÉE AVEC SUCCÈS")
-print(f"{'='*70}")
-print("\nFichiers générés:")
-print("  - evaluation_tabresnet.png")
-print("  - cartographie_tabresnet.png")
-print("  - indices_vegetation_tabresnet.png")
-print("  - predictions_tabresnet.csv")
