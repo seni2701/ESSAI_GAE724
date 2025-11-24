@@ -17,7 +17,7 @@ print("Modèle XGBoost - Prédiction des rendements agricoles")
 print("Intégration des indices de végétation et analyse spatiale")
 print("=" * 80)
 
-# ----- SECTION 1: CHARGEMENT ET PRÉPARATION DES DONNÉES -----
+########################### CHARGEMENT ET PRÉPARATION DES DONNÉES ##################################
 
 csv_path = (r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv')
 df = pd.read_csv(csv_path)
@@ -39,7 +39,7 @@ df['field_encoded'] = le_field.fit_transform(df['Field'].fillna('Unknown'))
 df['year_normalized'] = (df['year'] - df['year'].min()) / (df['year'].max() - df['year'].min())
 df['year_squared'] = df['year_normalized'] ** 2
 
-# ----- SECTION 2: INTÉGRATION DES INDICES DE VÉGÉTATION -----
+########################## INTÉGRATION DES INDICES DE VÉGÉTATION ####################################
 # Structure préparée pour NDVI, NDWI, EVI, LAI
 # Si ces colonnes existent dans vos données, elles seront automatiquement intégrées
 # Sinon, vous pouvez les ajouter via fusion avec un autre fichier
@@ -62,7 +62,7 @@ else:
     df['LAI'] = np.random.uniform(1.0, 6.0, len(df))
     available_indices = vegetation_indices
 
-# ----- SECTION 3: SÉLECTION DES FEATURES -----
+############################# SECTION 3: SÉLECTION DES FEATURES ##########################################
 
 target = 'yield_tpha'
 features_to_exclude = [
@@ -114,8 +114,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(f"\nÉchantillons d'entraînement: {len(X_train)}")
 print(f"Échantillons de test: {len(X_test)}")
 
-# ----- SECTION 5: CONFIGURATION ET ENTRAÎNEMENT DU MODÈLE -----
-
+######################### CONFIGURATION ET ENTRAÎNEMENT DU MODÈLE ##############################
 xgb_params = {
     'learning_rate': 0.03,
     'max_depth': 4,
@@ -151,7 +150,7 @@ model = xgb.train(
     evals_result=evals_result
 )
 
-# ----- SECTION 6: ÉVALUATION DU MODÈLE -----
+################################ ÉVALUATION DU MODÈLE ########################################
 
 y_pred_train = model.predict(dtrain)
 y_pred_test = model.predict(dtest)
@@ -176,59 +175,67 @@ print(f"  RMSE = {rmse_test:.3f} t/ha")
 print(f"  MAE = {mae_test:.3f} t/ha")
 print(f"  RRMSE = {rrmse_test:.2f}%")
 
-# ----- SECTION 7: VISUALISATIONS -----
+###################################### VISUALISATIONS ###############################################
 
-# Courbe d'apprentissage
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-# 7.1 Courbe d'apprentissage
-ax1 = axes[0, 0]
+# FIGURE 1 : Courbe d'apprentissage (par itérations)
+fig1 = plt.figure(figsize=(7, 5))
 epochs = len(evals_result['train']['rmse'])
-ax1.plot(range(epochs), evals_result['train']['rmse'], label='Entraînement', linewidth=2)
-ax1.plot(range(epochs), evals_result['test']['rmse'], label='Test', linewidth=2)
-ax1.set_xlabel('Itérations', fontsize=11)
-ax1.set_ylabel('RMSE (t/ha)', fontsize=11)
-ax1.set_title('Courbe d\'apprentissage', fontsize=12, fontweight='bold')
-ax1.legend()
-ax1.grid(True, alpha=0.3)
-
-# 7.2 Observé vs Prédit
-ax2 = axes[0, 1]
-ax2.scatter(y_test, y_pred_test, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
-min_val = min(y_test.min(), y_pred_test.min())
-max_val = max(y_test.max(), y_pred_test.max())
-ax2.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Identité')
-ax2.set_xlabel('Rendement observé (t/ha)', fontsize=11)
-ax2.set_ylabel('Rendement prédit (t/ha)', fontsize=11)
-ax2.set_title(f'Validation du modèle (R² = {r2_test:.3f})', fontsize=12, fontweight='bold')
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-
-# 7.3 Distribution des résidus
-ax3 = axes[1, 0]
-residuals = y_test - y_pred_test
-ax3.hist(residuals, bins=20, edgecolor='black', alpha=0.7)
-ax3.axvline(0, color='red', linestyle='--', linewidth=2)
-ax3.set_xlabel('Résidus (t/ha)', fontsize=11)
-ax3.set_ylabel('Fréquence', fontsize=11)
-ax3.set_title('Distribution des résidus', fontsize=12, fontweight='bold')
-ax3.grid(True, alpha=0.3)
-
-# 7.4 Résidus vs Prédit
-ax4 = axes[1, 1]
-ax4.scatter(y_pred_test, residuals, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
-ax4.axhline(0, color='red', linestyle='--', linewidth=2)
-ax4.set_xlabel('Rendement prédit (t/ha)', fontsize=11)
-ax4.set_ylabel('Résidus (t/ha)', fontsize=11)
-ax4.set_title('Analyse des résidus', fontsize=12, fontweight='bold')
-ax4.grid(True, alpha=0.3)
-
+plt.plot(range(epochs), evals_result['train']['rmse'], label='Entraînement', linewidth=2)
+plt.plot(range(epochs), evals_result['test']['rmse'], label='Test', linewidth=2)
+plt.xlabel('Itérations', fontsize=11)
+plt.ylabel('RMSE (t/ha)', fontsize=11)
+plt.title('Courbe d\'apprentissage', fontsize=10, fontweight='bold')
+plt.legend()
+plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/evaluation_modele.png', dpi=300, bbox_inches='tight')
-print(f"\nGraphique sauvegardé: evaluation_modele.png")
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/courbe_apprentissage.png', dpi=300, bbox_inches='tight')
+print(f"\nGraphique sauvegardé: courbe_apprentissage.png")
 plt.show()
 
-# ----- SECTION 8: IMPORTANCE DES FEATURES -----
+# FIGURE 2 : Observé vs Prédit (Test)
+fig2 = plt.figure(figsize=(7, 5))
+plt.scatter(y_test, y_pred_test, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
+min_val = min(y_test.min(), y_pred_test.min())
+max_val = max(y_test.max(), y_pred_test.max())
+plt.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Identité')
+plt.xlabel('Rendement observé (t/ha)', fontsize=11)
+plt.ylabel('Rendement prédit (t/ha)', fontsize=11)
+plt.title(f'Test du modèle (R² = {r2_test:.3f})', fontsize=10, fontweight='bold')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/test_modele.png', dpi=300, bbox_inches='tight')
+print(f"Graphique sauvegardé: test_modele.png")
+plt.show()
+
+# FIGURE 3 : Analyse des résidus (2 graphiques côte à côte)
+fig3, axes = plt.subplots(1, 2, figsize=(14, 5))
+residuals = y_test - y_pred_test
+
+# Distribution des résidus
+ax1 = axes[0]
+ax1.hist(residuals, bins=20, edgecolor='black', alpha=0.7)
+ax1.axvline(0, color='red', linestyle='--', linewidth=2)
+ax1.set_xlabel('Résidus (t/ha)', fontsize=11)
+ax1.set_ylabel('Fréquence', fontsize=11)
+ax1.set_title('Figure a : Distribution des résidus', fontsize=10, fontweight='bold')
+ax1.grid(True, alpha=0.3)
+
+# Résidus vs Prédit
+ax2 = axes[1]
+ax2.scatter(y_pred_test, residuals, alpha=0.6, s=50, edgecolors='black', linewidths=0.5)
+ax2.axhline(0, color='red', linestyle='--', linewidth=2)
+ax2.set_xlabel('Rendement prédit (t/ha)', fontsize=11)
+ax2.set_ylabel('Résidus (t/ha)', fontsize=11)
+ax2.set_title('Figure b : Analyse des résidus', fontsize=10, fontweight='bold')
+ax2.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/analyse_residus.png', dpi=300, bbox_inches='tight')
+print(f"Graphique sauvegardé: analyse_residus.png")
+plt.show()
+
+################################ IMPORTANCE DES FEATURES #######################################################
 
 importance = model.get_score(importance_type='gain')
 importance_df = pd.DataFrame({
@@ -240,7 +247,7 @@ plt.figure(figsize=(10, 6))
 plt.barh(importance_df['Feature'][:15], importance_df['Importance'][:15])
 plt.xlabel('Importance (Gain)', fontsize=12)
 plt.ylabel('Variables', fontsize=12)
-plt.title('Top 15 des variables les plus importantes', fontsize=13, fontweight='bold')
+plt.title('Les variables les plus importantes', fontsize=10, fontweight='bold')
 plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/importance_features.png', dpi=300, bbox_inches='tight')
@@ -248,11 +255,11 @@ print(f"Graphique sauvegardé: importance_features.png")
 plt.show()
 
 print("\n" + "=" * 80)
-print("TOP 10 DES VARIABLES LES PLUS IMPORTANTES")
+print("LES VARIABLES LES PLUS IMPORTANTES")
 print("=" * 80)
 print(importance_df.head(10).to_string(index=False))
 
-# ----- SECTION 9: ANALYSE SHAP -----
+###################################### ANALYSE SHAP #######################################################
 
 print("\n" + "=" * 80)
 print("ANALYSE SHAP - INTERPRÉTABILITÉ DU MODÈLE")
@@ -269,7 +276,7 @@ try:
     # Summary plot
     plt.figure(figsize=(10, 8))
     shap.summary_plot(shap_values, X_test, show=False, max_display=15)
-    plt.title('Impact des variables sur les prédictions (SHAP)', fontsize=13, fontweight='bold')
+    plt.title('Impact des variables sur les prédictions (SHAP)', fontsize=10, fontweight='bold')
     plt.tight_layout()
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/shap_summary.png', dpi=300, bbox_inches='tight')
     print(f"\nGraphique SHAP sauvegardé: shap_summary.png")
@@ -278,10 +285,19 @@ try:
     # Bar plot
     plt.figure(figsize=(10, 6))
     shap.summary_plot(shap_values, X_test, plot_type='bar', show=False, max_display=15)
-    plt.title('Importance SHAP des variables', fontsize=13, fontweight='bold')
+    plt.title('Importance SHAP des variables', fontsize=10, fontweight='bold')
     plt.tight_layout()
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/shap_importance.png', dpi=300, bbox_inches='tight')
     print(f"Graphique SHAP sauvegardé: shap_importance.png")
+    plt.show()
+    
+    # SHAP distribution plot détaillé
+    plt.figure(figsize=(10, 8))
+    shap.summary_plot(shap_values, X_test, show=False)
+    plt.title('Distribution des impacts SHAP', fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/shap_distribution.png', dpi=300, bbox_inches='tight')
+    print(f"Graphique SHAP sauvegardé: shap_distribution.png")
     plt.show()
     
     # Calcul des valeurs SHAP moyennes
@@ -305,14 +321,14 @@ except Exception as e:
     plt.yticks(range(len(importance_keys)), importance_keys)
     plt.xlabel('Importance (Gain)', fontsize=12)
     plt.ylabel('Variables', fontsize=12)
-    plt.title('Importance des variables (méthode native)', fontsize=13, fontweight='bold')
+    plt.title('Importance des variables', fontsize=10, fontweight='bold')
     plt.gca().invert_yaxis()
     plt.tight_layout()
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/shap_alternative.png', dpi=300, bbox_inches='tight')
     print(f"Graphique d'importance sauvegardé: shap_alternative.png")
     plt.show()
 
-# ----- SECTION 10: CARTOGRAPHIE DES RÉSULTATS -----
+####################################### CARTOGRAPHIE DES RÉSULTATS ###################################################
 
 print("\n" + "=" * 80)
 print("PRÉPARATION DE LA CARTOGRAPHIE")
@@ -359,24 +375,24 @@ if 'coord_x' in df.columns and 'coord_y' in df.columns:
     # Rendements observés
     sc1 = axes[0].scatter(df['coord_x'], df['coord_y'], c=df['yield_tpha'], 
                           s=100, cmap='YlGn', edgecolors='black', linewidths=0.5)
-    axes[0].set_title('Rendements observés (t/ha)', fontsize=12, fontweight='bold')
+    axes[0].set_title('Rendements observés (t/ha)', fontsize=10, fontweight='bold')
     plt.colorbar(sc1, ax=axes[0])
     
     # Rendements prédits
     sc2 = axes[1].scatter(df['coord_x'], df['coord_y'], c=df['yield_predicted'], 
                           s=100, cmap='YlGn', edgecolors='black', linewidths=0.5)
-    axes[1].set_title('Rendements prédits (t/ha)', fontsize=12, fontweight='bold')
+    axes[1].set_title('Rendements prédits (t/ha)', fontsize=10, fontweight='bold')
     plt.colorbar(sc2, ax=axes[1])
     
     # Erreurs absolues
     sc3 = axes[2].scatter(df['coord_x'], df['coord_y'], c=df['abs_error'], 
                           s=100, cmap='Reds', edgecolors='black', linewidths=0.5)
-    axes[2].set_title('Erreurs absolues (t/ha)', fontsize=12, fontweight='bold')
+    axes[2].set_title('Erreurs absolues (t/ha)', fontsize=10, fontweight='bold')
     plt.colorbar(sc3, ax=axes[2])
     
     for ax in axes:
-        ax.set_xlabel('Coordonnée X', fontsize=11)
-        ax.set_ylabel('Coordonnée Y', fontsize=11)
+        ax.set_xlabel('Coordonnée X', fontsize=10)
+        ax.set_ylabel('Coordonnée Y', fontsize=10)
         ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
@@ -386,8 +402,8 @@ if 'coord_x' in df.columns and 'coord_y' in df.columns:
 else:
     print("\nCoordonnées spatiales non disponibles - cartographie basique générée")
     
-    # Cartographie alternative par année et champ
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    # Cartographie alternative par année et champ (2 lignes, 1 colonne)
+    fig, axes = plt.subplots(2, 1, figsize=(12, 10))
     
     # Évolution temporelle par champ
     for field in df['Field'].unique():
@@ -397,10 +413,10 @@ else:
         axes[0].plot(field_data['year'], field_data['yield_predicted'], 
                     marker='s', linestyle='--', label=f'Pred {field}', alpha=0.7)
     
-    axes[0].set_xlabel('Année', fontsize=11)
-    axes[0].set_ylabel('Rendement (t/ha)', fontsize=11)
-    axes[0].set_title('Évolution temporelle des rendements', fontsize=12, fontweight='bold')
-    axes[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    axes[0].set_xlabel('Année', fontsize=10)
+    axes[0].set_ylabel('Rendement (t/ha)', fontsize=10)
+    axes[0].set_title('Figure a : Évolution temporelle des rendements', fontsize=10, fontweight='bold')
+    axes[0].legend(bbox_to_anchor=(1.02, 1), loc='upper left', fontsize=8)
     axes[0].grid(True, alpha=0.3)
     
     # Boxplot des erreurs par champ
@@ -408,72 +424,12 @@ else:
                     for field in df['Field'].unique()]
     axes[1].boxplot(field_errors, labels=df['Field'].unique())
     axes[1].set_xlabel('Champ', fontsize=11)
-    axes[1].set_ylabel('Erreur absolue (t/ha)', fontsize=11)
-    axes[1].set_title('Distribution des erreurs par champ', fontsize=12, fontweight='bold')
+    axes[1].set_ylabel('Erreur absolue (t/ha)', fontsize=10)
+    axes[1].set_title('Figure b : Distribution des erreurs par champ', fontsize=10, fontweight='bold')
     axes[1].grid(True, alpha=0.3, axis='y')
+    plt.setp(axes[1].xaxis.get_majorticklabels(), rotation=45, ha='right')
     
     plt.tight_layout()
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/analyse_temporelle.png', dpi=300, bbox_inches='tight')
     print(f"Analyse temporelle sauvegardée: analyse_temporelle.png")
     plt.show()
-
-# ----- SECTION 11: ANALYSE DES INDICES DE VÉGÉTATION -----
-
-if available_indices:
-    print("\n" + "=" * 80)
-    print("CORRÉLATION INDICES DE VÉGÉTATION - RENDEMENTS")
-    print("=" * 80)
-    
-    correlation_data = df[available_indices + ['yield_tpha']].corr()['yield_tpha'].drop('yield_tpha')
-    print(correlation_data.sort_values(ascending=False))
-    
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    for idx, indice in enumerate(available_indices):
-        ax = axes[idx // 2, idx % 2]
-        ax.scatter(df[indice], df['yield_tpha'], alpha=0.5, s=30)
-        
-        # Régression linéaire
-        z = np.polyfit(df[indice].dropna(), df['yield_tpha'][df[indice].notna()], 1)
-        p = np.poly1d(z)
-        x_line = np.linspace(df[indice].min(), df[indice].max(), 100)
-        ax.plot(x_line, p(x_line), 'r--', linewidth=2)
-        
-        corr = df[[indice, 'yield_tpha']].corr().iloc[0, 1]
-        ax.set_xlabel(indice, fontsize=11)
-        ax.set_ylabel('Rendement (t/ha)', fontsize=11)
-        ax.set_title(f'{indice} vs Rendement (r = {corr:.3f})', 
-                    fontsize=12, fontweight='bold')
-        ax.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/correlation_vegetation.png', dpi=300, bbox_inches='tight')
-    print(f"\nGraphique de corrélation sauvegardé: correlation_vegetation.png")
-    plt.show()
-
-# ----- SECTION 12: RAPPORT FINAL -----
-
-print("\n" + "=" * 80)
-print("RÉSUMÉ DE L'ANALYSE")
-print("=" * 80)
-print(f"\nModèle: XGBoost avec {len(available_features)} variables")
-print(f"Performance (R² test): {r2_test:.4f}")
-print(f"Erreur moyenne (MAE): {mae_test:.3f} t/ha")
-print(f"Erreur relative (RRMSE): {rrmse_test:.2f}%")
-
-print(f"\nTop 3 variables importantes:")
-for i, row in importance_df.head(3).iterrows():
-    print(f"  {i+1}. {row['Feature']}: {row['Importance']:.2f}")
-
-print(f"\nFichiers générés:")
-print(f"  - evaluation_modele.png")
-print(f"  - importance_features.png")
-print(f"  - shap_summary.png")
-print(f"  - shap_importance.png")
-print(f"  - predictions_rendements.csv")
-print(f"  - analyse_temporelle.png ou cartographie_spatiale.png")
-if available_indices:
-    print(f"  - correlation_vegetation.png")
-
-print("\n" + "=" * 80)
-print("ANALYSE TERMINÉE")
-print("=" * 80)
