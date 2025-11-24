@@ -11,16 +11,13 @@ import matplotlib.pyplot as plt
 
 print("=== Modèle SVM - Prédiction des rendements avec indices Sentinel-2 ===\n")
 
-# -------------------------------------------------------------------
-# 1. Chargement des données
-# -------------------------------------------------------------------
+################################# Chargement des données #####################################
 data_path = r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv'
 df = pd.read_csv(data_path)
 print(f"Données chargées : {df.shape[0]} observations, {df.shape[1]} variables")
 
-# -------------------------------------------------------------------
-# 1bis. Intégration des indices Sentinel-2
-# -------------------------------------------------------------------
+
+############################### Intégration des indices Sentinel-2 #########################
 print("\n" + "="*60)
 print("INTÉGRATION INDICES SENTINEL-2")
 print("="*60)
@@ -58,9 +55,8 @@ except Exception as e:
     print(f"ERREUR: {e}")
     print("Vérifiez le chemin du fichier")
 
-# -------------------------------------------------------------------
-# 2. Feature engineering + sélection dynamique
-# -------------------------------------------------------------------
+#
+############################### Feature engineering + sélection dynamique ###############################
 print("\n" + "="*60)
 print("FEATURE ENGINEERING")
 print("="*60)
@@ -97,9 +93,8 @@ if missing_features:
 
 print(f"\nVariables retenues : {len(available_features)}")
 
-# -------------------------------------------------------------------
-# 3. Préparation des données
-# -------------------------------------------------------------------
+
+################################### Préparation des données ########################################################
 needed = available_features + [target_col, 'Field']
 df_model = df[needed].copy()
 df_model = df_model.dropna(subset=[target_col])
@@ -109,9 +104,8 @@ y = df_model[target_col]
 fields = df_model['Field']
 years = df_model['year']
 
-# -------------------------------------------------------------------
-# 4. Split temporel
-# -------------------------------------------------------------------
+
+################################# Split temporel ################################################
 train_mask = years <= 2020
 X_train, X_test = X[train_mask], X[~train_mask]
 y_train, y_test = y[train_mask], y[~train_mask]
@@ -119,9 +113,7 @@ fields_train = fields[train_mask]
 
 print(f"\nTrain (2010-2020): {len(X_train)} | Test (2021-2023): {len(X_test)}")
 
-# -------------------------------------------------------------------
-# 5. Pipeline + GridSearch (régularisation maximale)
-# -------------------------------------------------------------------
+################################# Régularisation maximale ###############################################
 print("\n" + "="*60)
 print("OPTIMISATION MODÈLE SVM")
 print("="*60)
@@ -147,9 +139,9 @@ best_model = grid.best_estimator_
 print(f"\nMeilleurs paramètres : {grid.best_params_}")
 print(f"Meilleur score CV : {grid.best_score_:.3f}")
 
-# -------------------------------------------------------------------
-# 6. Évaluation
-# -------------------------------------------------------------------
+
+##################################### Évaluation ##############################################
+
 def metrics(y_true, y_pred):
     r2 = r2_score(y_true, y_pred)
     mae = mean_absolute_error(y_true, y_pred)
@@ -173,16 +165,14 @@ print(f"Test (2021-2023):  R²={r2_te:.3f} | MAE={mae_te:.3f} | RMSE={rmse_te:.3
 if r2_tr - r2_te > 0.15:
     print("\nATTENTION: Écart train-test > 0.15 (surapprentissage)")
 
-# -------------------------------------------------------------------
-# 7. Validation croisée par champ
-# -------------------------------------------------------------------
+
+################################### Validation croisée par champ ######################################
 cv = GroupKFold(n_splits=5)
 cv_scores = cross_val_score(best_model, X_train, y_train, cv=cv, groups=fields_train, scoring='r2', n_jobs=-1)
 print(f"\nValidation croisée GroupKFold: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
 
-# -------------------------------------------------------------------
-# 8. Visualisations
-# -------------------------------------------------------------------
+
+################################### Visualisations #############################################
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
 # Prédictions
@@ -221,9 +211,7 @@ plt.savefig(r'/home/snabraham6/#modele_deep_learning/svm_model/fig_svm/evaluatio
 print("\nGraphique sauvegardé: evaluation_SENTINEL2.png")
 plt.show()
 
-# -------------------------------------------------------------------
-# 9. Performance par année
-# -------------------------------------------------------------------
+########################## Performance par année ####################################################
 test_df_temp = df_model[~train_mask].copy()
 test_df_temp['prediction'] = y_test_pred
 test_df_temp['year'] = years[~train_mask].values
@@ -258,9 +246,7 @@ if yearly_performance:
     plt.savefig(r'/home/snabraham6/#modele_deep_learning/svm_model/fig_svm/performance_annuelle_SENTINEL2.png', dpi=300)
     plt.show()
 
-# -------------------------------------------------------------------
-# 10. Validation par champ
-# -------------------------------------------------------------------
+################################## Validation par champ ###############################################
 print("\n" + "="*60)
 print("VALIDATION PAR CHAMP (Test)")
 print("="*60)
@@ -278,5 +264,3 @@ for f in sorted(test_df['Field'].unique()):
 
 if field_stats:
     print(pd.DataFrame(field_stats).to_string(index=False))
-
-print("\n=== Modèle SVM avec indices Sentinel-2 réels terminé ===")
