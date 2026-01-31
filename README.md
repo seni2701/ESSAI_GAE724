@@ -10,7 +10,7 @@ La Montérégie représente près de 40% des superficies de maïs-grain de la pr
 
 ## Objectifs
 
-- Extraire et analyser les indices spectraux (NDVI, EVI, NDWI, LAI) pour caractériser la dynamique spatio-temporelle du maïs
+- Extraire et analyser les indices spectraux (NDVI, EVI, LAI) pour caractériser la dynamique spatio-temporelle du maïs
 - Entraîner et comparer différents modèles d'apprentissage automatique : Random Forest, XGBoost, SVM et TabResNet
 - Évaluer la performance des modèles via des indicateurs statistiques (R², RMSE, MAE) et produire des cartes de rendement estimées à l'échelle parcellaire et régionale
 
@@ -134,9 +134,9 @@ python scripts/yield_svm.py
 ## Variables d'entrée des modèles
 
 Les modèles intègrent :
-- Indices de végétation (NDVI, EVI, NDWI, LAI)
+- Indices de végétation (NDVI, EVI, LAI)
 - Variables climatiques (températures min/max/moy, précipitations, neige)
-- Caractéristiques pédologiques (drainage, texture, matière organique)
+- Caractéristiques pédologiques (drainage)
 - Variables spatiales (région, zone, station météo)
 
 ## Limites et recommandations
