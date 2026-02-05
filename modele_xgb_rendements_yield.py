@@ -40,24 +40,23 @@ df['year_normalized'] = (df['year'] - df['year'].min()) / (df['year'].max() - df
 df['year_squared'] = df['year_normalized'] ** 2
 
 ########################## INTÉGRATION DES INDICES DE VÉGÉTATION ####################################
-# Structure préparée pour NDVI, NDWI, EVI, LAI
+# Structure préparée pour NDVI, EVI, LAI
 # Si ces colonnes existent dans vos données, elles seront automatiquement intégrées
 # Sinon, vous pouvez les ajouter via fusion avec un autre fichier
 
-vegetation_indices = ['NDVI', 'NDWI', 'EVI', 'LAI']
+vegetation_indices = ['NDVI', 'EVI', 'LAI']
 available_indices = [col for col in vegetation_indices if col in df.columns]
 
 if available_indices:
     print(f"\nIndices de végétation détectés: {', '.join(available_indices)}")
 else:
     print("\nAucun indice de végétation détecté dans les données actuelles.")
-    print("Pour les intégrer, ajoutez les colonnes NDVI, NDWI, EVI, LAI au CSV.")
+    print("Pour les intégrer, ajoutez les colonnes NDVI, EVI, LAI au CSV.")
     
     # Génération de données synthétiques pour démonstration (à remplacer par vos vraies données)
     print("\nGénération de données synthétiques pour démonstration...")
     np.random.seed(42)
     df['NDVI'] = np.random.uniform(0.3, 0.9, len(df))
-    df['NDWI'] = np.random.uniform(-0.3, 0.3, len(df))
     df['EVI'] = np.random.uniform(0.2, 0.8, len(df))
     df['LAI'] = np.random.uniform(1.0, 6.0, len(df))
     available_indices = vegetation_indices
@@ -72,7 +71,7 @@ features_to_exclude = [
 
 numerical_features = [
     'g_pente_mo',
-    'tmean', 'tmax', 'tmin', 'rain_mm', 'ppt_mm', 'snow_cm',
+    'tmean', 'tmax', 'tmin', 'rain_mm', 'ppt_mm',
     'drainage_encoded', 'station_encoded', 'field_encoded'
 ] + available_indices
 
@@ -116,14 +115,14 @@ print(f"Échantillons de test: {len(X_test)}")
 
 ######################### CONFIGURATION ET ENTRAÎNEMENT DU MODÈLE ##############################
 xgb_params = {
-    'learning_rate': 0.03,
-    'max_depth': 4,
-    'subsample': 0.8,
-    'colsample_bytree': 0.8,
-    'min_child_weight': 3,
-    'gamma': 0.1,
-    'reg_alpha': 0.1,
-    'reg_lambda': 1.0,
+    'learning_rate': 0.05,        
+    'max_depth': 5,               
+    'subsample': 0.75,            
+    'colsample_bytree': 0.75,     
+    'min_child_weight': 5,        
+    'gamma': 0.2,                 
+    'reg_alpha': 0.3,             
+    'reg_lambda': 1.5,            
     'objective': 'reg:squarederror',
     'eval_metric': 'rmse',
     'random_state': 42,
@@ -143,9 +142,9 @@ evals_result = {}
 model = xgb.train(
     params=xgb_params,
     dtrain=dtrain,
-    num_boost_round=500,
+    num_boost_round=300,          
     evals=evals,
-    early_stopping_rounds=50,
+    early_stopping_rounds=30,     
     verbose_eval=50,
     evals_result=evals_result
 )
@@ -173,7 +172,6 @@ print(f"\nTest:")
 print(f"  R² = {r2_test:.4f}")
 print(f"  RMSE = {rmse_test:.3f} t/ha")
 print(f"  MAE = {mae_test:.3f} t/ha")
-print(f"  RRMSE = {rrmse_test:.2f}%")
 
 ###################################### VISUALISATIONS ###############################################
 
@@ -200,7 +198,7 @@ max_val = max(y_test.max(), y_pred_test.max())
 plt.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Identité')
 plt.xlabel('Rendement observé (t/ha)', fontsize=11)
 plt.ylabel('Rendement prédit (t/ha)', fontsize=11)
-plt.title(f'Test du modèle (R² = {r2_test:.3f})', fontsize=10, fontweight='bold')
+plt.title(f'Test du modèle (R² = {r2_test:.3f}), (RMSE = {rmse_test:.3f}), (MAE = {mae_test:.3f})', fontsize=10, fontweight='bold')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -344,6 +342,10 @@ df['yield_predicted'] = model.predict(d_all)
 df['residual'] = df['yield_tpha'] - df['yield_predicted']
 df['abs_error'] = np.abs(df['residual'])
 
+# Marquer les données de test dans le dataframe
+df['is_test'] = False
+df.loc[X_test.index, 'is_test'] = True
+
 # Sauvegarde des résultats
 output_df = df[[
     'Field', 'year', 'station_name', 'drainage',
@@ -352,6 +354,85 @@ output_df = df[[
 
 output_df.to_csv(r'/home/snabraham6/#modele_deep_learning/xgboost_model/data/predictions_rendements.csv', index=False)
 print(f"\nRésultats sauvegardés: predictions_rendements.csv")
+
+############################ GRAPHIQUE PAR CHAMP F1-F10 ###################################
+print("\n--- Génération des graphiques par champ ---")
+
+# Récupérer la liste unique des champs et filtrer uniquement F1 à F10
+all_fields = sorted(df['Field'].unique())
+unique_fields = [f for f in all_fields if f.startswith('F') and f[1:].isdigit() and 1 <= int(f[1:]) <= 10]
+unique_fields = sorted(unique_fields, key=lambda x: int(x[1:]))  # Trier par numéro
+
+n_fields = len(unique_fields)
+
+print(f"Nombre de champs à afficher: {n_fields}")
+print(f"Champs sélectionnés: {unique_fields}")
+
+# Calculer la disposition de la grille (3 colonnes)
+n_cols = 3
+n_rows = (n_fields + n_cols - 1) // n_cols
+
+print(f"Grille: {n_rows} lignes x {n_cols} colonnes")
+
+# Créer la figure avec subplots
+fig = plt.figure(figsize=(18, 6 * n_rows))
+gs = fig.add_gridspec(n_rows, n_cols, hspace=0.4, wspace=0.3)
+
+# Graphiques individuels par champ
+for idx, field in enumerate(unique_fields):
+    # Calculer la position dans la grille
+    row = idx // n_cols
+    col = idx % n_cols
+    
+    print(f"Champ {field}: position [{row}, {col}]")
+    
+    ax = fig.add_subplot(gs[row, col])
+    
+    # Filtrer les données de test pour ce champ
+    field_test_data = df[(df['Field'] == field) & (df['is_test'] == True)].copy()
+    
+    if len(field_test_data) > 0:
+        y_field_test = field_test_data['yield_tpha'].values
+        y_field_pred = field_test_data['yield_predicted'].values
+        
+        # Calculer R² pour ce champ
+        if len(y_field_test) > 1 and y_field_test.std() > 0:
+            r2_field = r2_score(y_field_test, y_field_pred)
+        else:
+            r2_field = np.nan
+        
+        # Tracer les points
+        ax.scatter(y_field_test, y_field_pred, alpha=0.7, s=60, 
+                  edgecolors='k', linewidth=0.8, color='steelblue')
+        
+        # Ligne 1:1
+        if len(y_field_test) > 0:
+            min_val_field = min(y_field_test.min(), y_field_pred.min())
+            max_val_field = max(y_field_test.max(), y_field_pred.max())
+            ax.plot([min_val_field, max_val_field], [min_val_field, max_val_field], 
+                   'r--', linewidth=1.5, label='Ligne 1:1')
+        
+        # Titre avec R²
+        if not np.isnan(r2_field):
+            ax.set_title(f'Champ {field} (R² {r2_field:.3f})', fontsize=10, fontweight='bold')
+        else:
+            ax.set_title(f'Champ {field} (R² N/A)', fontsize=10, fontweight='bold')
+        
+        ax.legend(fontsize=8)
+    else:
+        ax.text(0.5, 0.5, f'Champ {field}\nPas de données test', 
+               ha='center', va='center', fontsize=10)
+        ax.set_title(f'Champ {field}', fontsize=10, fontweight='bold')
+    
+    ax.set_xlabel('Observé (t/ha)', fontsize=9)
+    ax.set_ylabel('Prédit (t/ha)', fontsize=9)
+    ax.grid(alpha=0.3)
+    ax.tick_params(labelsize=8)
+
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/test_par_champ.png', 
+            dpi=300, bbox_inches='tight')
+print("Graphique sauvegardé: test_par_champ.png")
+plt.show()
 
 # Analyse par champ
 field_stats = df.groupby('Field').agg({
@@ -402,34 +483,146 @@ if 'coord_x' in df.columns and 'coord_y' in df.columns:
 else:
     print("\nCoordonnées spatiales non disponibles - cartographie basique générée")
     
-    # Cartographie alternative par année et champ (2 lignes, 1 colonne)
-    fig, axes = plt.subplots(2, 1, figsize=(12, 10))
+############################ ANALYSE TEMPORALE PAR CHAMP ###################################
+
+# Filtrer et trier les champs pour exclure les IRDA
+fields_to_plot = [field for field in df['Field'].unique() if not field.startswith('IRDA')]
+
+# Fonction de tri personnalisée pour extraire le numéro du champ
+def extract_field_number(field_name):
+    """Extrait le numéro du champ (ex: 'F10' -> 10)"""
+    if field_name.startswith('F'):
+        try:
+            return int(field_name[1:])
+        except:
+            return 999
+    return 999
+
+# Trier les champs par numéro
+fields_to_plot = sorted(fields_to_plot, key=extract_field_number)
+print(f"Champs à tracer (triés): {fields_to_plot}")
+
+# PALETTE DE COULEURS AMÉLIORÉE - Plus claire et distincte
+custom_colors = [
+    '#2E86AB',  # Bleu vif
+    '#A23B72',  # Magenta
+    '#F18F01',  # Orange
+    '#C73E1D',  # Rouge-orange
+    '#6A994E',  # Vert
+    '#BC4B51',  # Rouge rosé
+    '#8D5B4C',  # Brun
+    '#5C7F67',  # Vert sauge
+    '#D4A574',  # Beige doré
+    '#7A6F9B',  # Violet
+    '#E63946',  # Rouge vif
+    '#06AED5',  # Cyan
+    '#DD6E42',  # Terracotta
+    '#4EA8DE',  # Bleu clair
+    '#99C24D',  # Vert lime
+    '#B07BAC',  # Mauve
+    '#F4A259',  # Orange pêche
+    '#5E8C61',  # Vert foncé
+    '#E5989B',  # Rose
+    '#118AB2'   # Bleu-vert
+]
+
+n_fields = len(fields_to_plot)
+
+# Étendre la palette si nécessaire
+while len(custom_colors) < n_fields:
+    custom_colors.extend(custom_colors[:min(20, n_fields - len(custom_colors))])
+
+colors = custom_colors[:n_fields]
+
+# FIGURE A : Graphiques séparés par champ (grille de subplots)
+# Calculer la disposition optimale de la grille
+n_cols = 3  # 3 colonnes pour une meilleure lisibilité
+n_rows = int(np.ceil(n_fields / n_cols))
+
+fig_a, axes_a = plt.subplots(n_rows, n_cols, figsize=(16, 4*n_rows))
+fig_a.suptitle('Figure a : Évolution temporelle des rendements par champ', 
+               fontsize=14, fontweight='bold', y=0.995)
+
+# Aplatir le tableau d'axes pour faciliter l'itération
+axes_a_flat = axes_a.flatten() if n_fields > 1 else [axes_a]
+
+# Tracer chaque champ dans son propre subplot
+for idx, field in enumerate(fields_to_plot):
+    ax = axes_a_flat[idx]
+    field_data = df[df['Field'] == field].sort_values('year')
+    color = colors[idx]
     
-    # Évolution temporelle par champ
-    for field in df['Field'].unique():
-        field_data = df[df['Field'] == field].sort_values('year')
-        axes[0].plot(field_data['year'], field_data['yield_tpha'], 
-                    marker='o', label=f'Obs {field}', alpha=0.7)
-        axes[0].plot(field_data['year'], field_data['yield_predicted'], 
-                    marker='s', linestyle='--', label=f'Pred {field}', alpha=0.7)
+    # Tracer observations avec ligne solide
+    ax.plot(field_data['year'], field_data['yield_tpha'], 
+            marker='o', color=color, linewidth=2.5, markersize=8,
+            label='Observé', alpha=0.95)
     
-    axes[0].set_xlabel('Année', fontsize=10)
-    axes[0].set_ylabel('Rendement (t/ha)', fontsize=10)
-    axes[0].set_title('Figure a : Évolution temporelle des rendements', fontsize=10, fontweight='bold')
-    axes[0].legend(bbox_to_anchor=(1.02, 1), loc='upper left', fontsize=8)
-    axes[0].grid(True, alpha=0.3)
+    # Tracer prédictions avec ligne pointillée de la même couleur
+    ax.plot(field_data['year'], field_data['yield_predicted'], 
+            marker='s', linestyle='--', color=color, linewidth=2, markersize=6,
+            label='Prédit', alpha=0.75)
     
-    # Boxplot des erreurs par champ
-    field_errors = [df[df['Field'] == field]['abs_error'].values 
-                    for field in df['Field'].unique()]
-    axes[1].boxplot(field_errors, labels=df['Field'].unique())
-    axes[1].set_xlabel('Champ', fontsize=11)
-    axes[1].set_ylabel('Erreur absolue (t/ha)', fontsize=10)
-    axes[1].set_title('Figure b : Distribution des erreurs par champ', fontsize=10, fontweight='bold')
-    axes[1].grid(True, alpha=0.3, axis='y')
-    plt.setp(axes[1].xaxis.get_majorticklabels(), rotation=45, ha='right')
-    
-    plt.tight_layout()
-    plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/analyse_temporelle.png', dpi=300, bbox_inches='tight')
-    print(f"Analyse temporelle sauvegardée: analyse_temporelle.png")
-    plt.show()
+    ax.set_title(f'{field}', fontsize=11, fontweight='bold', pad=8)
+    ax.set_xlabel('Année', fontsize=10)
+    ax.set_ylabel('Rendement (t/ha)', fontsize=10)
+    ax.legend(loc='best', fontsize=9, framealpha=0.95)
+    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.set_facecolor('#FAFAFA')
+
+# Masquer les axes inutilisés
+for idx in range(n_fields, len(axes_a_flat)):
+    axes_a_flat[idx].axis('off')
+
+plt.tight_layout()
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/analyse_temporelle_fig_a.png', 
+            dpi=300, bbox_inches='tight')
+print(f"Figure  sauvegardée: analyse_temporelle_fig_a.png")
+plt.show()
+
+# FIGURE B : Boxplot des erreurs par champ (sans IRDA) - ordonnés
+fig_b, ax_b = plt.subplots(1, 1, figsize=(14, 6))
+
+field_errors = [df[df['Field'] == field]['abs_error'].values 
+                for field in fields_to_plot]
+
+# Créer le boxplot avec les mêmes couleurs
+bp = ax_b.boxplot(field_errors, labels=fields_to_plot, patch_artist=True, widths=0.6)
+
+# Colorer chaque boîte avec la couleur correspondante du champ
+for patch, color in zip(bp['boxes'], colors):
+    patch.set_facecolor(color)
+    patch.set_alpha(0.75)
+    patch.set_linewidth(1.5)
+
+# Colorer les autres éléments avec un style plus moderne
+for element in ['whiskers', 'fliers', 'medians', 'caps']:
+    for i, item in enumerate(bp[element]):
+        if element == 'medians':
+            item.set_color('#D62828')  # Rouge vif pour la médiane
+            item.set_linewidth(2.5)
+        else:
+            # Associer la couleur du champ correspondant
+            field_idx = i // 2 if element in ['whiskers', 'caps'] else i
+            if field_idx < len(colors):
+                if element == 'fliers':
+                    item.set_markeredgecolor(colors[field_idx])
+                    item.set_markerfacecolor('white')
+                    item.set_markersize(5)
+                    item.set_alpha(0.6)
+                else:
+                    item.set_color(colors[field_idx])
+                    item.set_linewidth(1.5)
+
+ax_b.set_xlabel('Champ', fontsize=12, fontweight='bold')
+ax_b.set_ylabel('Erreur absolue (t/ha)', fontsize=12, fontweight='bold')
+ax_b.set_title('Figure b : Distribution des erreurs par champ', 
+               fontsize=14, fontweight='bold', pad=15)
+ax_b.grid(True, alpha=0.3, axis='y', linestyle='--')
+ax_b.set_facecolor('#FAFAFA')
+plt.setp(ax_b.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=10)
+
+plt.tight_layout()
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/xgboost_model/figures/analyse_temporelle_fig_b.png', 
+            dpi=300, bbox_inches='tight')
+print(f"Figure b sauvegardée: analyse_temporelle_fig_b.png")
+plt.show()
