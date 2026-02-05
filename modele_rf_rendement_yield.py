@@ -15,7 +15,7 @@ print("Modèle Random Forest pour la prédiction des rendements agricoles")
 print("Intégration des indices de télédétection et analyse spatiale\n")
 
 ################################### CHARGEMENT ET EXPLORATION DES DONNÉES ###########################################
-data = pd.read_csv(r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate.csv')
+data = pd.read_csv(r'/home/snabraham6/#modele_deep_learning/data_model/data_final/data_final_enriched_climate_with_radar.csv')
 print(f"Dimensions des données: {data.shape[0]} lignes x {data.shape[1]} colonnes")
 print(f"\nAperçu des colonnes disponibles:")
 print(data.columns.tolist())
@@ -39,37 +39,92 @@ print("\n--- Préparation des indices de télédétection ---")
 # Simulation temporaire des indices (à remplacer par vos vraies données)
 np.random.seed(42)
 data['NDVI'] = np.random.uniform(0.3, 0.9, len(data))  # Normalized Difference Vegetation Index
-data['NDWI'] = np.random.uniform(-0.2, 0.3, len(data))  # Normalized Difference Water Index
 data['EVI'] = np.random.uniform(0.2, 0.8, len(data))   # Enhanced Vegetation Index
 data['LAI'] = np.random.uniform(1.0, 6.0, len(data))   # Leaf Area Index
 
 print("Indices simulés (à remplacer par données réelles):")
 print("- NDVI: Indice de végétation normalisé")
-print("- NDWI: Indice d'eau normalisé")
 print("- EVI: Indice de végétation amélioré")
 print("- LAI: Indice de surface foliaire")
 
-###################### ENCODAGE DES VARIABLES CATÉGORIELLES ##########################################
-categorical_vars = ['drainage', 'station_name', 'Field']
-label_encoders = {}
+##################################ROTATION DES CULTURES#######################
+print("\n" + "="*70)
+print("INTÉGRATION ROTATION DES CULTURES AAFC")
+print("="*70)
 
-for var in categorical_vars:
-    if var in data.columns:
-        le = LabelEncoder()
-        data[f'{var}_encoded'] = le.fit_transform(data[var].astype(str))
-        label_encoders[var] = le
+try:
+    # Charger les features de rotation enrichies
+    df_rotation = pd.read_csv(r'/home/snabraham6/#modele_deep_learning/data_model/data_final/rotation_cultures_features_no_irda.csv')
+    
+    print(f"Données de rotation chargées: {df_rotation.shape}")
+    print(f"Colonnes disponibles: {df_rotation.columns.tolist()}")
+    
+    # Sélectionner les features de rotation pertinentes
+    rotation_features = ['Field', 'year', 'crop_type', 'crop_type_lag1', 
+                        'corn_monoculture', 'consecutive_corn_years',
+                        'corn_after_soy', 'is_corn', 'is_soy']
+    
+    # Vérifier quelles colonnes existent
+    available_rotation_features = [col for col in rotation_features if col in df_rotation.columns]
+    df_rotation_subset = df_rotation[available_rotation_features].copy()
+    
+    # Fusionner avec les données principales sur Field ET year
+    print(f"\nFusion sur 'Field' et 'year'...")
+    data = data.merge(df_rotation_subset, on=['Field', 'year'], how='left')
+    
+    print(f"Après fusion: {data.shape}")
+    
+    # Afficher les statistiques de rotation
+    if 'corn_monoculture' in data.columns:
+        print(f"\nStatistiques de rotation:")
+        print(f"  - Observations avec monoculture de maïs: {data['corn_monoculture'].sum()}")
+        print(f"  - Observations avec rotation: {data['corn_after_soy'].sum() if 'corn_after_soy' in data.columns else 'N/A'}")
+        print(f"  - Années consécutives max: {data['consecutive_corn_years'].max() if 'consecutive_corn_years' in data.columns else 'N/A'}")
+        
+        # Pourcentage de données manquantes pour rotation
+        missing_pct = (data['corn_monoculture'].isna().sum() / len(data)) * 100
+        print(f"  - Données manquantes rotation: {missing_pct:.1f}%")
+    
+except Exception as e:
+    print(f"ERREUR lors du chargement de la rotation: {e}")
+    print("Création de variables de rotation par défaut (0)")
+    data['crop_type'] = 0
+    data['crop_type_lag1'] = 0
+    data['corn_monoculture'] = 0
+    data['consecutive_corn_years'] = 0
+    data['corn_after_soy'] = 0
+    data['is_corn'] = 0
+    data['is_soy'] = 0
 
 ########################### SÉLECTION ET PRÉPARATION DES FEATURES #################################
 target = 'yield_tpha'
 
-# Liste des features à utiliser
+# Variables radar à intégrer
+radar_features = [
+    'remplissage_ndvi_var', 'levee_ndvi_var', 'levee_evi',
+    'v6_v8_ndvi_entropy', 'vt_r1_vv', 'v6_v8_glcm_homogeneity',
+    'vt_r1_ndvi_var', 'remplissage_vv', 'vt_r1_vh',
+    'vt_r1_evi', 'levee_vh', 'ndvi_max',
+    'levee_vv', 'v6_v8_vh', 'remplissage_ndvi_entropy',
+    'levee_lai', 'vt_r1_ndvi_entropy',
+    'vt_r1_vv_vh', 'levee_glcm_homogeneity'
+]
+
+# Liste des features à utiliser (incluant maintenant les features radar)
 feature_columns = [
-    'region', 'zone',
     'g_pente_mo',
-    'tmean', 'tmax', 'tmin', 
-    'rain_mm', 'ppt_mm', 'snow_cm',
-    'NDVI', 'NDWI', 'EVI', 'LAI',
-    'drainage_encoded', 'station_name_encoded'
+    'tmean', 'tmax', 'tmin',  'ppt_mm',
+    'NDVI', 'EVI', 'LAI',
+    'drainage_encoded', 'station_name_encoded','crop_type', 'crop_type_lag1', 
+    'corn_monoculture', 'consecutive_corn_years',
+    'corn_after_soy', 'is_corn', 'is_soy'
+] + radar_features  # Ajout des features radar
+
+# Features de rotation
+rotation_features_model = [
+    'crop_type', 'crop_type_lag1', 
+    'corn_monoculture', 'consecutive_corn_years',
+    'corn_after_soy', 'is_corn', 'is_soy'
 ]
 
 # Filtrer les colonnes existantes
@@ -80,7 +135,9 @@ y = data[target].copy()
 
 print(f"\n--- Variables utilisées pour la prédiction ---")
 print(f"Nombre de features: {len(feature_columns)}")
-print(f"Features: {feature_columns}")
+print(f"Features de base: {len(feature_columns) - len([f for f in radar_features if f in feature_columns])}")
+print(f"Features radar: {len([f for f in radar_features if f in feature_columns])}")
+print(f"Features complètes: {feature_columns}")
 
 ################################ GESTION DES VALEURS MANQUANTES ET NORMALISATION ####################################
 print("\n--- Traitement des valeurs manquantes ---")
@@ -127,6 +184,14 @@ rf_model = RandomForestRegressor(
 rf_model.fit(X_train, y_train)
 print()
 
+# Validation croisée
+cv_scores = cross_val_score(
+    rf_model, X_scaled, y, cv=5, 
+    scoring='r2', n_jobs=-1
+)
+print(f"\nValidation croisée (5-fold):")
+print(f"  R² moyen = {cv_scores.mean():.3f} (+/- {cv_scores.std():.3f})")
+
 ########################### ÉVALUATION DU MODÈLE ##################################
 print("\n--- Évaluation des performances ---")
 y_pred_train = rf_model.predict(X_train)
@@ -142,7 +207,7 @@ print(f"\nPerformance sur l'entraînement:")
 print(f"  R² = {r2_train:.3f}")
 print(f"  RMSE = {rmse_train:.3f} t/ha")
 print(f"  MAE = {mae_train:.3f} t/ha")
-print(f"  RRMSE = {rrmse_train:.2f}%")
+
 
 # Métriques sur l'ensemble de test
 r2_test = r2_score(y_test, y_pred_test)
@@ -154,15 +219,7 @@ print(f"\nPerformance sur le test:")
 print(f"  R² = {r2_test:.3f}")
 print(f"  RMSE = {rmse_test:.3f} t/ha")
 print(f"  MAE = {mae_test:.3f} t/ha")
-print(f"  RRMSE = {rrmse_test:.2f}%")
 
-# Validation croisée
-cv_scores = cross_val_score(
-    rf_model, X_scaled, y, cv=5, 
-    scoring='r2', n_jobs=-1
-)
-print(f"\nValidation croisée (5-fold):")
-print(f"  R² moyen = {cv_scores.mean():.3f} (+/- {cv_scores.std():.3f})")
 
 ############################ VISUALISATIONS ############################################
 print("\n--- Génération des visualisations ---")
@@ -281,6 +338,103 @@ print("\n--- Génération de la cartographie ---")
 data['rendement_predit'] = rf_model.predict(X_scaled)
 data['erreur_prediction'] = data[target] - data['rendement_predit']
 
+############################ GRAPHIQUE PAR CHAMP ###################################
+print("\n--- Génération des graphiques par champ ---")
+
+# Récupérer la liste unique des champs et filtrer uniquement F1 à F10
+all_fields = sorted(data['Field'].unique())
+unique_fields = [f for f in all_fields if f.startswith('F') and f[1:].isdigit() and 1 <= int(f[1:]) <= 10]
+unique_fields = sorted(unique_fields, key=lambda x: int(x[1:]))  # Trier par numéro
+
+n_fields = len(unique_fields)
+
+print(f"Nombre de champs à afficher: {n_fields}")
+print(f"Champs sélectionnés: {unique_fields}")
+
+# Calculer R² global pour le titre
+mask_f1_f10 = data['Field'].isin(unique_fields)
+test_indices_f1_f10 = data[mask_f1_f10].index.intersection(y_test.index)
+y_test_f1_f10 = y_test[test_indices_f1_f10]
+y_pred_test_f1_f10 = rf_model.predict(X_scaled.loc[test_indices_f1_f10])
+r2_global = r2_score(y_test_f1_f10, y_pred_test_f1_f10)
+
+# Calculer la disposition de la grille (3 colonnes)
+n_cols = 3
+n_rows = (n_fields + n_cols - 1) // n_cols
+
+print(f"Grille: {n_rows} lignes x {n_cols} colonnes")
+print(f"R² global (F1-F10): {r2_global:.3f}")
+
+# Créer la figure avec subplots
+fig = plt.figure(figsize=(18, 6 * n_rows))
+
+# Titre global de la figure
+fig.suptitle(f'Test du modèle - Champs F1 à F10 (R² {r2_global:.3f})', 
+             fontsize=16, fontweight='bold', y=0.995)
+
+gs = fig.add_gridspec(n_rows, n_cols, hspace=0.4, wspace=0.3)
+
+# Graphiques individuels par champ
+for idx, field in enumerate(unique_fields):
+    # Calculer la position dans la grille
+    row = idx // n_cols
+    col = idx % n_cols
+    
+    print(f"Champ {field}: position [{row}, {col}]")
+    
+    ax = fig.add_subplot(gs[row, col])
+    
+    # Filtrer les données pour ce champ
+    field_mask = data['Field'] == field
+    field_data = data[field_mask].copy()
+    
+    # Séparer en train et test pour ce champ
+    field_test_mask = field_data.index.isin(y_test.index)
+    field_test_data = field_data[field_test_mask]
+    
+    if len(field_test_data) > 0:
+        y_field_test = field_test_data['yield_tpha']
+        y_field_pred = field_test_data['rendement_predit']
+        
+        # Calculer R² pour ce champ
+        if len(y_field_test) > 1 and y_field_test.std() > 0:
+            r2_field = r2_score(y_field_test, y_field_pred)
+        else:
+            r2_field = np.nan
+        
+        # Tracer les points
+        ax.scatter(y_field_test, y_field_pred, alpha=0.7, s=60, 
+                  edgecolors='k', linewidth=0.8, color='steelblue')
+        
+        # Ligne 1:1
+        if len(y_field_test) > 0:
+            min_val_field = min(y_field_test.min(), y_field_pred.min())
+            max_val_field = max(y_field_test.max(), y_field_pred.max())
+            ax.plot([min_val_field, max_val_field], [min_val_field, max_val_field], 
+                   'r--', linewidth=1.5, label='Ligne 1:1')
+        
+        # Titre avec R²
+        if not np.isnan(r2_field):
+            ax.set_title(f'Champ {field} (R² {r2_field:.3f})', fontsize=10, fontweight='bold')
+        else:
+            ax.set_title(f'Champ {field} (R² N/A)', fontsize=10, fontweight='bold')
+        
+        ax.legend(fontsize=8)
+    else:
+        ax.text(0.5, 0.5, f'Champ {field}\nPas de données test', 
+               ha='center', va='center', fontsize=10)
+        ax.set_title(f'Champ {field}', fontsize=10, fontweight='bold')
+    
+    ax.set_xlabel('Observé (t/ha)', fontsize=9)
+    ax.set_ylabel('Prédit (t/ha)', fontsize=9)
+    ax.grid(alpha=0.3)
+    ax.tick_params(labelsize=8)
+
+plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/test_par_champ.png', 
+            dpi=300, bbox_inches='tight')
+print("Graphique sauvegardé: test_par_champ.png")
+plt.show()
+
 # Carte des rendements observés par région/zone
 plt.figure(figsize=(12, 5))
 
@@ -327,50 +481,3 @@ plt.tight_layout()
 plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/carte_erreurs.png', dpi=300, bbox_inches='tight')
 print("Graphique sauvegardé: carte_erreurs.png")
 plt.show()
-
-############################### ANALYSE TEMPORELLE ################################
-print("\n--- Analyse temporelle ---")
-
-temporal_analysis = data.groupby('year').agg({
-    'yield_tpha': 'mean',
-    'rendement_predit': 'mean'
-}).reset_index()
-
-plt.figure(figsize=(12, 6))
-plt.plot(temporal_analysis['year'], temporal_analysis['yield_tpha'], 
-         marker='o', linewidth=2, label='Rendement observé', color='steelblue')
-plt.plot(temporal_analysis['year'], temporal_analysis['rendement_predit'], 
-         marker='s', linewidth=2, label='Rendement prédit', color='coral')
-plt.xlabel('Année', fontsize=11)
-plt.ylabel('Rendement moyen (t/ha)', fontsize=11)
-plt.title('Evolution temporelle des rendements', fontsize=12, fontweight='bold')
-plt.legend()
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.savefig(r'/home/snabraham6/#modele_deep_learning/random_f_model/figures/evolution_temporelle.png', dpi=300, bbox_inches='tight')
-print("Graphique sauvegardé: evolution_temporelle.png")
-plt.show()
-
-##################################### EXPORT DES RÉSULTATS ######################################
-print("\n--- Export des résultats ---")
-
-results_df = data[['region', 'zone', 'year', 'Field', 'yield_tpha', 
-                   'rendement_predit', 'erreur_prediction']].copy()
-results_df.to_csv(r'/home/snabraham6/#modele_deep_learning/random_f_model/données/predictions_rendements.csv', index=False)
-print("Fichier sauvegardé: predictions_rendements.csv")
-
-# Rapport de synthèse
-summary_stats = {
-    'Nombre_observations': len(data),
-    'R2_test': r2_test,
-    'RMSE_test': rmse_test,
-    'MAE_test': mae_test,
-    'RRMSE_test': rrmse_test,
-    'R2_CV_mean': cv_scores.mean(),
-    'R2_CV_std': cv_scores.std()
-}
-
-summary_df = pd.DataFrame([summary_stats])
-summary_df.to_csv(r'/home/snabraham6/#modele_deep_learning/random_f_model/données/resume_modele.csv', index=False)
-print("Fichier sauvegardé: resume_modele.csv")
-
