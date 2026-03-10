@@ -1,0 +1,11 @@
+numpy
+pandas
+geopandas
+scikit-learn
+xgboost
+matplotlib
+seaborn
+shapely
+pyproj
+earthengine-api
+rasterio
