@@ -2,7 +2,7 @@
 Version 2.0, January 2004
 http://www.apache.org/licenses/
 
-Copyright (c) 2024 Ibrahima (seni2701)
+Copyright (c) 2026 Ibrahima (seni2701)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ limitations under the License.
 NOTICE
 
 This project — ESSAI_GAE724 — was developed as part of academic research
-at the University.
+at the University of Sherbrooke.
 
 Project: Prédiction des rendements du maïs en Montérégie (2010–2023)
 Methods: Remote Sensing (Sentinel-1/2, Landsat), Google Earth Engine,
          Machine Learning (XGBoost, Random Forest, SVM, TabResNet)
 Author:  Ibrahima
-Year:    2024
+Year:    2026
 
 Data sources used in this project may be subject to their own licenses:
 - Sentinel-1/2: ESA Copernicus Open Access (CC BY 4.0)
