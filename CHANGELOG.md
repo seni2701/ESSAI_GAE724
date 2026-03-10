@@ -1,9 +1,9 @@
 # Changelog — ESSAI_GAE724
 
-## [v1.0.0] — 2024
+## [v1.0.0] — 2026
 ### Ajouté
 - Extraction des indices spectraux via Google Earth Engine
-  (NDVI, EVI, NDWI, LAI, SAVI, GNDVI, NDRE, VV, VH, RVI)
+  (NDVI, EVI, LAI, VV, VH)
 - Sélection automatique Sentinel-1/2 et Landsat par année
 - Pipeline ML complet : XGBoost, Random Forest, SVM, TabResNet
 - GridSearchCV pour l'optimisation des hyperparamètres
