@@ -13,6 +13,16 @@ Ce projet développe une approche intégrée combinant la **télédétection mul
 
 Il s'agit, à notre connaissance, de l'une des **premières applications combinant explicitement Sentinel-1, Sentinel-2, Landsat et des indicateurs de rotation culturale** dans un cadre d'apprentissage supervisé à l'échelle régionale en Montérégie.
 
+Essai de maîtrise (M.Sc.) présenté au **Département de géomatique appliquée, Faculté des lettres et sciences humaines, Université de Sherbrooke**, janvier 2026.
+
+**Jury d'évaluation**
+
+| Rôle | Nom | Affiliation |
+|------|-----|-------------|
+| Directeur | Mickaël Germain | Département de géomatique appliquée, UdeS |
+| Co-directrice | Ramata Magagi | Département de géomatique appliquée, UdeS |
+| Examinateur interne | Yacine Bouroubi | Département de géomatique appliquée, UdeS |
+
 ---
 
 ## Contexte
@@ -31,9 +41,9 @@ Développer et comparer différents modèles d'IA afin de prédire le rendement 
 
 ### Objectifs spécifiques
 
-1. Identifier les variables agroclimatiques, pédologiques et spectrales les plus déterminantes du rendement du maïs à partir des données satellitaires
-2. Comparer la performance des modèles d'apprentissage automatique et profond pour évaluer leur capacité à représenter la variabilité spatiale et temporelle des rendements
-3. Analyser l'effet de la rotation maïs–soya sur la stabilité et la précision des prédictions de rendement à l'échelle régionale
+1. Identifier les variables agroclimatiques, pédologiques et spectrales les plus déterminantes du rendement du maïs à partir des données satellitaires.
+2. Comparer la performance des modèles d'apprentissage automatique et profond pour évaluer leur capacité à représenter la variabilité spatiale et temporelle des rendements.
+3. Analyser l'effet de la rotation maïs–soya sur la stabilité et la précision des prédictions de rendement à l'échelle régionale.
 
 ---
 
@@ -41,27 +51,34 @@ Développer et comparer différents modèles d'IA afin de prédire le rendement 
 
 ### Site d'étude
 
-L'étude couvre la **région administrative de la Montérégie** (sud du Québec), territoire d'environ 11 000 km² regroupant 14 MRC. Dix parcelles agricoles (F1–F10) ont été retenues autour de Beloeil, Saint-Hyacinthe et Saint-Bernard-de-Michaudville (secteurs FADQ 6-01, 6-02, 6-03 et 6-05), avec des séries de rendements continues sur 2010–2023.
+L'étude couvre la **région administrative de la Montérégie** (sud du Québec), territoire d'environ 11 000 km² regroupant 14 MRC, avec des précipitations annuelles de 900 à 1 000 mm et une saison de croissance de mai à octobre. Dix parcelles agricoles (F1–F10) ont été retenues autour de Beloeil, Saint-Hyacinthe et Saint-Bernard-de-Michaudville (secteurs FADQ 6-01, 6-02, 6-03 et 6-05), avec des séries de rendements continues sur 2010–2023 et localisées via la plateforme Mergin Maps (format KML).
 
 | Groupe | Parcelles | Caractéristiques pédologiques |
 |--------|-----------|-------------------------------|
-| Rotation maïs–soya régulière | F1, F3, F5, F7, F9 | Alternance quasi-annuelle |
-| Monoculture plus fréquente | F2, F4, F6, F8, F10 | Zones à forte productivité |
-| Drainage imparfait à modérément bon | F1, F3, F4, F6 | Zones légèrement dépressionnaires |
-| Drainage modérément bon à bon | F2, F5, F10 | Meilleures conditions de croissance |
-| Drainage rapide à excessif | F7, F8, F9 | Sols sableux, risque de stress hydrique |
+| Rotation maïs–soya régulière (quasi-annuelle) | F1, F3, F5, F7, F9 | Alternance marquée maïs–soya |
+| Monoculture maïs plus fréquente | F2, F4, F6, F8, F10 | Zones à forte productivité |
+| Drainage imparfait à modérément bon (DRI–LPI) | F1, F3, F4, F6 | Zones légèrement dépressionnaires |
+| Drainage modérément bon à bon (MSU–SDM) | F2, F5, F10 | Meilleures conditions de croissance |
+| Drainage rapide à excessif (SJU–SRE) | F7, F8, F9 | Sols sableux, risque de stress hydrique |
 
 ### Données mobilisées
 
 | Catégorie | Sources | Variables |
 |-----------|---------|-----------|
-| **Satellitaires** | Sentinel-2, Sentinel-1 (SAR), Landsat 5/7/8 via GEE | NDVI, EVI, LAI, VV, VH, GLCM |
+| **Satellitaires** | Sentinel-2 SR Harmonisé, Sentinel-1 (SAR), Landsat 5/7/8 via GEE | NDVI, EVI, LAI, VV, VH, GLCM |
 | **Climatiques** | ECCC, Agrométéo Québec, MELCCFP (2010–2023) | tmax, tmin, tmean, ppt_mm |
-| **Pédologiques** | BDPQ / IRDA | Texture, drainage, matière organique, pente |
-| **Rotation culturale** | AAFC (Annual Crop Inventory) via GEE | crop_type_lag1, is_corn, is_soy |
-| **Rendements historiques** | FADQ (2010–2023) | Rendement observé par parcelle (t/ha) |
+| **Pédologiques** | BDPQ / IRDA / SISCan | Texture, drainage, matière organique, pente |
+| **Rotation culturale** | AAFC (Annual Crop Inventory) via GEE | crop_type_lag1, is_monoculture, consec_corn |
+| **Rendements historiques** | FADQ / MAPAQ (2010–2023) | Rendement observé par parcelle (t/ha) |
 
-**Stations météorologiques** : Marieville (7024627), Montréal–Saint-Hubert (7027329), Sorel (7028200), Verchères (7028700).
+**Stations météorologiques** :
+
+| Nom | Latitude (°N) | Longitude (°O) | Code ID | Source |
+|-----|--------------|---------------|---------|--------|
+| Marieville | 45,46 | −73,13 | 7024627 | ECCC |
+| Montréal–Saint-Hubert | 45,52 | −73,42 | 7027329 | ECCC |
+| Sorel | 46,03 | −73,12 | 7028200 | ECCC |
+| Verchères | 45,78 | −73,35 | 7028700 | ECCC |
 
 ### Indices spectraux calculés (Sentinel-2, 10 m)
 
@@ -69,17 +86,38 @@ L'étude couvre la **région administrative de la Montérégie** (sud du Québec
 |--------|---------|-----------|
 | NDVI | (NIR − Red) / (NIR + Red) | Tucker (1979) |
 | EVI | 2.5 × (NIR − Red) / (NIR + 6×Red − 7.5×Blue + 1) | Huete et al. (2002) |
-| LAI | Estimé via modèle biophysique Sentinel-2 | Fang et al. (2019) |
-| VV / VH | Rétrodiffusion SAR Sentinel-1 | Veloso et al. (2017) |
+| LAI | Estimé via NDVI ou modèle biophysique Sentinel-2 | Fang et al. (2019) |
+| VV / VH | Rétrodiffusion SAR Sentinel-1 (après correction radiométrique et filtrage speckle) | Veloso et al. (2017) |
 
 Le masquage des nuages est effectué via les bandes **QA60**, **SCL** et l'algorithme `s2cloudless`. La collection `COPERNICUS/S2_SR_HARMONIZED` garantit la cohérence radiométrique sur l'ensemble de la période. Des **composites mensuels** (juin, juillet, août) ont été générés par parcelle pour couvrir les phases phénologiques clés (croissance végétative, floraison, remplissage des grains).
+
+### Rotation culturale (2010–2023)
+
+| Année | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 |
+|-------|----|----|----|----|----|----|----|----|----|----|
+| 2010 | Maïs | Maïs | Maïs | Soya | Maïs | Soya | Maïs | Maïs | Maïs | Maïs |
+| 2011 | Soya | Maïs | Soya | Maïs | Soya | Maïs | Soya | Maïs | Soya | Maïs |
+| 2012 | Maïs | Soya | Maïs | Maïs | Maïs | Maïs | Maïs | Soya | Maïs | Soya |
+| 2013 | Soya | Maïs | Soya | Maïs | Soya | Maïs | Soya | Maïs | Soya | Maïs |
+| 2014 | Maïs | Soya | Maïs | Soya | Maïs | Maïs | Maïs | Soya | Maïs | Maïs |
+| 2015 | Soya | Maïs | Soya | Maïs | Soya | Soya | Soya | Maïs | Soya | Soya |
+| 2016 | Maïs | Soya | Maïs | Soya | Maïs | Maïs | Maïs | Soya | Maïs | Maïs |
+| 2017 | Maïs | Maïs | Maïs | Maïs | Maïs | Soya | Soya | Maïs | Maïs | Maïs |
+| 2018 | Soya | Maïs | Soya | Maïs | Maïs | Maïs | Soya | Soya | Soya | Maïs |
+| 2019 | Maïs | Soya | Maïs | Soya | Soya | Maïs | Maïs | Maïs | Maïs | Soya |
+| 2020 | Soya | Maïs | Soya | Maïs | Maïs | Soya | Soya | Soya | Soya | Maïs |
+| 2021 | Maïs | Maïs | Maïs | Soya | Maïs | Maïs | Maïs | Maïs | Maïs | Soya |
+| 2022 | Maïs | Soya | Maïs | Maïs | Maïs | Soya | Maïs | Maïs | Maïs | Maïs |
+| 2023 | Soya | Maïs | Soya | Maïs | Maïs | Maïs | Soya | Soya | Soya | Maïs |
+
+> F1, F3, F5, F7, F9 : alternance maïs–soya quasi-annuelle. F2, F4, F6, F8, F10 : séquences de monoculture maïs plus fréquentes.
 
 ### Prétraitement des données
 
 - **Valeurs manquantes** : imputation par `SimpleImputer` (moyenne) ; interpolation temporelle et validation croisée entre stations voisines pour les données climatiques
 - **Normalisation** : `StandardScaler` + méthode min-max pour les variables continues
 - **Encodage** : `LabelEncoder` pour les variables catégorielles
-- **Variables de rotation** : `is_soy`, `is_corn`, `crop_type_lag1` générées après masquage dynamique maïs/soya dans GEE
+- **Variables de rotation** : `crop_type_lag1`, `is_monoculture`, `consec_corn` générées après masquage dynamique maïs/soya dans GEE
 - **Division temporelle** : 70 % entraînement (2010–2020 → **110 observations**) / 30 % test (2021–2023 → **30 observations**)
 
 ### Modèles testés et hyperparamètres
@@ -87,52 +125,53 @@ Le masquage des nuages est effectué via les bandes **QA60**, **SCL** et l'algor
 | Modèle | Algorithme | Paramètres clés |
 |--------|------------|-----------------|
 | **Random Forest (RF)** | Bagging (ensemble) | n_estimators=150, max_depth=10, max_samples=0.8, max_features=0.5, min_samples_split=10, min_samples_leaf=4 |
-| **XGBoost (XGB)** | Gradient boosting séquentiel | learning_rate=0.05, max_depth=5, subsample=0.75, colsample_bytree=0.75, gamma=0.2, α=0.3 (L1), λ=1.5 (L2), 300 itérations, early stopping=30 |
+| **XGBoost** | Gradient boosting séquentiel | learning_rate=0.05, max_depth=5, subsample=0.75, colsample_bytree=0.75, min_child_weight=5, gamma=0.2, α=0.3 (L1), λ=1.5 (L2), 300 itérations, early stopping=30 |
 | **SVM** | Noyau radial (RBF) | C=10, ε=0.1, gamma=scale |
-| **TabResNet** | Réseau neuronal résiduel (PyTorch) | learning_rate=0.001, batch_size=32, 500 époques, Dropout p=0.2, Batch Normalization |
+| **TabResNet** | Réseau neuronal résiduel (PyTorch) | learning_rate=0.001, batch_size=32, 500 époques, ReLU, Dropout p=0.2, Batch Normalization |
 
 ### Stratégies de validation
 
 | Modèle | Protocole principal | Protocole complémentaire |
 |--------|---------------------|--------------------------|
-| RF, XGB, TabResNet | Validation croisée k-fold (5 plis) | LOYO (RF et XGB) |
-| SVM | TimeSeriesSplit (ordre chronologique) | LOYO |
+| RF, XGBoost | Validation croisée k-fold (5 plis, stratifiée) | LOYO |
+| SVM | GridSearchCV 5 plis + GroupKFold par champ (TimeSeriesSplit) | — |
+| TabResNet | GroupShuffleSplit 80/20 par champ | — |
 
-Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année complète du jeu d'entraînement, constituant une contrainte plus exigeante que la validation croisée classique. TabResNet exclu du LOYO en raison d'une convergence précoce instable sur n=140 observations.
+Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année complète du jeu d'entraînement, constituant une contrainte plus exigeante que la validation croisée classique. Le SVM et le TabResNet sont exclus du LOYO en raison respectivement de l'instabilité des estimations sur données de taille modérée et d'une convergence précoce instable sur n=140 observations.
 
 **Métriques** : R², RMSE (t/ha), MAE (t/ha), erreur relative (% du rendement moyen FADQ = 11,5 t/ha)
 
-**Interprétabilité** : Analyse **SHAP** (SHapley Additive exPlanations) pour RF et XGB
+**Interprétabilité** : Analyse **SHAP** (SHapley Additive exPlanations) pour RF et XGBoost
 
 ---
 
 ## Résultats
 
-### Comparaison des performances (ensemble de test, 2021–2023)
+### Comparaison des performances (validation croisée et ensemble de test 2021–2023)
 
-| Modèle | R² | RMSE (t/ha) | MAE (t/ha) | Erreur relative |
-|--------|----|-------------|------------|-----------------|
-| **XGBoost** | **0,780** | **0,638** | **0,411** | **5,6 %** |
-| Random Forest | 0,509 | 0,954 | 0,716 | 8,3 % |
-| TabResNet | 0,443 | 1,134 | 0,812 | 9,9 % |
-| SVM | 0,191 | 1,367 | 0,939 | 11,9 % |
+| Modèle | R² (test) | RMSE (t/ha) | MAE (t/ha) | Erreur relative |
+|--------|-----------|-------------|------------|-----------------|
+| **XGBoost** | **0,785** | **0,631** | **0,408** | **5,5 %** |
+| Random Forest | 0,545 | 0,919 | 0,667 | 8,0 % |
+| TabResNet | 0,509 | 1,065 | 0,831 | 9,3 % |
+| SVM | 0,180 | 1,376 | 0,993 | 12,0 % |
 
-> XGBoost améliore la précision d'environ **33 % (RMSE)** et **43 % (MAE)** par rapport au Random Forest. L'écart entre XGB et SVM représente une réduction de l'erreur relative de l'ordre de **53 %**.
+> XGBoost améliore la précision d'environ **31 % (RMSE)** et **39 % (MAE)** par rapport au Random Forest. L'écart entre XGBoost et SVM représente une réduction de l'erreur relative de l'ordre de **54 %**.
 
 ### Validation LOYO — estimations temporelles conservatrices
 
 | Modèle | MAE LOYO par champ (t/ha) | RMSE LOYO par champ (t/ha) |
 |--------|---------------------------|----------------------------|
-| XGBoost | 1,30 – 1,48 | 1,65 – 1,77 |
-| Random Forest | 1,42 – 1,62 | 1,71 – 1,86 |
+| XGBoost | 1,08 – 1,75 | 1,23 – 2,01 |
+| Random Forest | 1,15 – 2,08 | 1,45 – 2,30 |
 
-> Ces valeurs, nettement supérieures à celles de la validation croisée, reflètent la difficulté à généraliser sur des **années climatiquement non observées** et constituent des estimations plus représentatives de la performance réelle en conditions opérationnelles.
+> Ces valeurs, nettement supérieures à celles de la validation croisée, reflètent la difficulté à généraliser sur des **années climatiquement non observées** et constituent des estimations plus représentatives de la performance réelle en conditions opérationnelles. Le nombre d'années de maïs par champ varie de 7 (F3, F7) à 10 (F5, F10) selon la rotation.
 
 ### Variables les plus influentes — analyse SHAP (XGBoost)
 
 | Rang | Variable | Rôle agronomique |
 |------|----------|-----------------|
-| 1 | `ppt_mm` — précipitations cumulées | Facteur dominant ; bilan hydrique du maïs à chaque stade |
+| 1 | `ppt_mm` — précipitations cumulées | Facteur dominant ; bilan hydrique du maïs à chaque stade phénologique |
 | 2 | `tmax` — température maximale | Contrainte thermique (floraison, remplissage des grains) |
 | 3 | `v6_v8_ndvi_entropy` — entropie NDVI | Hétérogénéité et structure du couvert végétal |
 | 4 | `VV`, `VH` — rétrodiffusion Sentinel-1 | Structure du couvert et état hydrique du sol |
@@ -142,12 +181,28 @@ Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année
 
 ### Observations clés
 
-- XGBoost reproduit fidèlement les **années de stress climatique** (2011 : excès d'humidité → 8,1 t/ha ; 2014 et 2019 : déficits hydriques) et les **années à forte productivité** (2016, 2017, 2022 : >12,5 t/ha)
-- En 2019, XGB prédit −3,8 t/ha vs −3,9 t/ha observé (FADQ) ; le RF sous-estime à −2,7 t/ha
-- Les parcelles en **rotation maïs–soya** (F1, F3, F5, F7, F9) présentent des MAE médianes < 0,3 t/ha vs 0,5–0,7 t/ha pour les parcelles en monoculture
+- XGBoost reproduit fidèlement les **années de stress climatique** (2011 : excès d'humidité, ~8,7 t/ha ; 2019 : conditions froides et pluvieuses) et les **années à forte productivité** (2016, 2017, 2022 : >12,5 t/ha)
+- En 2019, XGBoost prédit −3,8 t/ha vs −3,9 t/ha observé (FADQ) ; le RF sous-estime à −2,7 t/ha
+- Les parcelles en **rotation maïs–soya** (F1, F3, F5, F7, F9) présentent des MAE médianes < 0,3 t/ha vs 0,5–0,7 t/ha pour les parcelles en monoculture plus fréquente
 - Le **drainage du sol** est déterminant : 9,5 t/ha sur sols à drainage excessif (SRE) contre 12,0 t/ha sur sols à drainage subaquatique (SUB)
 - La variabilité spatiale s'aligne avec les données FADQ : zones productives au centre/nord Montérégie (12–13 t/ha), moins productives au sud-ouest (<10 t/ha)
 - Le RF tend à **sous-estimer les rendements élevés** (>12,5 t/ha) en raison de l'effet de moyennage propre au bagging
+- Le TabResNet converge dès l'époque 5 et compresse les prédictions vers la moyenne — stable mais peu discriminant
+- Le SVM présente une hétéroscédasticité significative et une pente de régression observé/prédit de 0,25
+
+---
+
+## Environnement de développement
+
+| Outil | Rôle | Bibliothèques / notes |
+|-------|------|-----------------------|
+| Google Earth Engine (GEE) | Extraction, traitement et composites temporels Sentinel-2/1, Landsat 5/7/8 | Scripts JavaScript + Python API ; gee_map |
+| Python 3.11 / VS Code | Modélisation IA/ML, traitement statistique, analyse spatio-temporelle | scikit-learn, torch, pandas, numpy, matplotlib, shap, seaborn, scienceplots, scipy |
+| VS Code + GitHub | Gestion de versions, reproductibilité | GitHub Actions |
+| Excel / CSV | Saisie, vérification, format pivot pour GEE et Python | — |
+| ArcGIS Pro / Mergin Maps | Cartographie du site d'étude, collecte terrain | Outils SIG de base |
+
+Environnement virtuel : miniconda/venv, Ubuntu 24.04 / Windows 11.
 
 ---
 
@@ -157,8 +212,8 @@ Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année
 ESSAI_GAE724/
 │
 ├── data/                         # Données d'entrée
-│   ├── climate/                 # Données climatiques (ECCC, Agrométéo Québec)
-│   ├── pedology/                # Données pédologiques (BDPQ / IRDA)
+│   ├── climate/                 # Données climatiques (ECCC, Agrométéo Québec, MELCCFP)
+│   ├── pedology/                # Données pédologiques (BDPQ / IRDA / SISCan)
 │   ├── satellite/               # Indices spectraux extraits via GEE
 │   └── rotation/                # Rotation culturale AAFC (Annual Crop Inventory)
 │
@@ -166,7 +221,7 @@ ESSAI_GAE724/
 │   ├── yield_rf.py              # Modèle Random Forest
 │   ├── yield_svm.py             # Modèle SVM
 │   ├── yield_xgboost.py         # Modèle XGBoost
-│   └── modele_rendement_svm_FINAL.py
+│   └── yield_TabResNet.py       # Modèle TabResNet
 │
 ├── notebooks/                    # Notebooks d'analyse
 │   ├── preprocessing.ipynb      # Prétraitement et préparation des données
@@ -178,7 +233,7 @@ ESSAI_GAE724/
 │   └── shap/                    # Analyses SHAP (importance des variables)
 │
 └── docs/
-    └── essai_complet.pdf        # Document de maîtrise complet (M.Sc., jan. 2026)
+    └── essai_GAE724_final.pdf   # Document de maîtrise complet (M.Sc., jan. 2026)
 ```
 
 ---
@@ -237,12 +292,13 @@ X_train, y_train = train[features], train["rendement"]
 X_test,  y_test  = test[features],  test["rendement"]
 
 # Entraînement XGBoost
-# Résultats attendus : R²=0.780, RMSE=0.638 t/ha, MAE=0.411 t/ha
+# Résultats attendus : R²=0.785, RMSE=0.631 t/ha, MAE=0.408 t/ha
 model = xgb.XGBRegressor(
     learning_rate=0.05,
     max_depth=5,
     subsample=0.75,
     colsample_bytree=0.75,
+    min_child_weight=5,
     gamma=0.2,
     reg_alpha=0.3,
     reg_lambda=1.5,
@@ -287,7 +343,7 @@ shap.plots.beeswarm(shap_values)
 
 ## Limites identifiées
 
-- **Taille du jeu de données** : 140 observations (10 parcelles × 14 ans), dont 110 en entraînement et 30 en test. Les seuils de stabilité documentés sont de 200–500 observations pour RF/XGB, plusieurs centaines pour le SVM, et plusieurs milliers pour le TabResNet — tous les modèles opèrent en deçà de leur seuil optimal.
+- **Taille du jeu de données** : 140 observations (10 parcelles × 14 ans), dont 110 en entraînement et 30 en test. Les seuils de stabilité documentés sont de 200–500 observations pour RF/XGBoost, plusieurs centaines pour le SVM, et plusieurs milliers pour le TabResNet — tous les modèles opèrent en deçà de leur seuil optimal.
 - **Ensemble de test réduit** : 30 observations (3 par champ, 2021–2023). Une seule année climatiquement atypique suffit à dégrader partiellement les métriques ; la validation LOYO fournit des estimations plus représentatives.
 - **Résolution spatiale** : Sentinel-2 (10 m) et Landsat (30 m) ne capturent pas la variabilité intraparcellaire dans les zones à forte hétérogénéité pédologique.
 - **Couverture nuageuse** : Discontinuités temporelles pendant les phases phénologiques clés (levée, floraison, remplissage des grains), atténuées par `s2cloudless` et la collection harmonisée Sentinel-2 SR.
@@ -304,15 +360,15 @@ shap.plots.beeswarm(shap_values)
 - Intégrer les données terrain de l'été 2025 (rugosité, humidité du sol, biomasse) pour calibrer et valider les indices satellitaires
 - Enrichir le jeu de données avec de nouvelles parcelles et des données FADQ additionnelles
 - Ajouter le **rendement historique moyen par parcelle** comme variable d'entrée (priorité méthodologique)
-- Intégrer des variables agronomiques détaillées (type d'hybride, densité de semis, fertilisation azotée)
-- Exploiter des **degrés-jours** et **cumuls de précipitations** par stade phénologique
+- Intégrer des variables agronomiques détaillées (type d'hybride, densité de semis, fertilisation azotée) et des variables climatiques cumulatives (degrés-jours, cumuls par stade phénologique)
+- Exploiter les images drone multispectrales pour calibration locale à l'échelle intraparcellaire
 
 ### Moyen terme
-- Modèles hybrides : **XGB-NN**, **RF-DNN** pour combiner stabilité et flexibilité
+- Modèles hybrides : **XGBoost-NN**, **RF-DNN** pour combiner stabilité et flexibilité
 - **Validation spatiale par blocs** (spatial block cross-validation) pour évaluer la généralisation hors-domaine
-- Imagerie drone multispectrale pour calibration locale à l'échelle intraparcellaire
 - Quantification des incertitudes prédictives par bootstrap
 - Méthodes d'explicabilité locale complémentaires (**LIME**)
+- Séries Sentinel-2 plus denses couvrant l'ensemble du cycle cultural
 
 ### Long terme
 - Réseaux neuronaux spatio-temporels (**CNN-LSTM**) avec séries temporelles continues Sentinel-1/2
@@ -325,17 +381,22 @@ shap.plots.beeswarm(shap_values)
 ## Références clés
 
 - Bolton, D. K., & Friedl, M. A. (2013). Forecasting crop yield using remotely sensed vegetation indices and crop phenology metrics. *Agricultural and Forest Meteorology*, 173, 74–84.
+- Breiman, L. (2001). Random Forests. *Machine Learning*, 45(1), 5–32.
 - Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. *Proceedings KDD*, 785–794.
+- Cortes, C., & Vapnik, V. (1995). Support-vector networks. *Machine Learning*, 20(3), 273–297.
 - Fang, H., et al. (2019). An Overview of Global Leaf Area Index (LAI). *Reviews of Geophysics*, 57(3), 739–799.
 - Gorishniy, Y., et al. (2021). Revisiting Deep Learning Models for Tabular Data. *NeurIPS*, 34.
 - Huber, F., et al. (2022). Extreme Gradient Boosting for yield estimation compared with Deep Learning approaches. *Computers and Electronics in Agriculture*, 202, 107346.
 - Jeong, J. H., et al. (2016). Random Forests for Global and Regional Crop Yield Predictions. *PLOS ONE*, 11(6), e0156571.
 - Kang, Y., et al. (2020). Comparative assessment of environmental variables and machine learning algorithms for maize yield prediction in the US Midwest. *Environmental Research Letters*, 15(6), 064005.
 - Kamir, E., et al. (2020). Estimating wheat yields in Australia using climate records, satellite image time series and machine learning methods. *ISPRS Journal*, 160, 124–135.
+- Khaki, S., & Wang, L. (2019). Crop Yield Prediction Using Deep Neural Networks. *Frontiers in Plant Science*, 10.
+- Kuhn, M., & Johnson, K. (2013). Applied Predictive Modeling. Springer.
 - Lundberg, S. M., & Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions. *NeurIPS*, 30.
+- Roberts, D. R., et al. (2017). Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure. *Ecography*, 40(8), 913–929.
 - Shahhosseini, M., et al. (2020). Forecasting Corn Yield With Machine Learning Ensembles. *Frontiers in Plant Science*, 11.
 - Veloso, A., et al. (2017). Understanding the temporal behavior of crops using Sentinel-1 and Sentinel-2-like data. *Remote Sensing of Environment*, 199, 415–426.
-- FADQ (2023). Assurance récolte — Rendements de référence. fadq.qc.ca
+- FADQ (2023a). Assurance récolte — Rendements de référence. fadq.qc.ca
 
 ---
 
@@ -346,7 +407,7 @@ shap.plots.beeswarm(shap_values)
 - **Agriculture et Agroalimentaire Canada (AAFC)** — données de rotation culturale (Annual Crop Inventory)
 - **Institut de recherche et de développement en agroenvironnement (IRDA)** — données pédologiques
 - **Agrométéo Québec** et **MELCCFP** — données climatiques complémentaires
-- Le personnel du Département de géomatique appliquée, Université de Sherbrooke
+- Le corps professoral du Département de géomatique appliquée, Université de Sherbrooke, en particulier le Pr Mickaël Germain et la Pre Ramata Magagi
 
 ---
 
