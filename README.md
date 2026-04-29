@@ -27,7 +27,9 @@ Essai de maîtrise (M.Sc.) présenté au **Département de géomatique appliqué
 
 ## Contexte
 
-La Montérégie représente près de **40 % des superficies de maïs-grain** du Québec — plus de **3,6 millions de tonnes** produites sur environ **355 700 hectares** (MAPAQ, 2023). Les rendements moyens régionaux varient entre **9 et 11 t/ha**, pouvant atteindre **12 t/ha** dans les conditions les plus favorables, avec un rendement de référence FADQ de **11,5 t/ha** sur la période 2010–2023 (min : 8,1 t/ha en 2011 ; max : 13,4 t/ha en 2017).
+La Montérégie représente près de **40 % des superficies de maïs-grain** du Québec — plus de **3,6 millions de tonnes** produites sur environ **355 700 hectares** (MAPAQ, 2023). Les rendements moyens régionaux varient entre **9 et 11 t/ha**, pouvant atteindre **12 t/ha** dans les conditions les plus favorables, avec un rendement de référence FADQ de **11,5 t/ha** sur la période 2010–2023 (min : 8,85 t/ha en 2011 ; max : 13,35 t/ha en 2017).
+
+> La concentration est encore plus marquée en Montérégie-Ouest, où le maïs-grain peut représenter jusqu'à 55–60 % des superficies en grandes cultures certaines années (FADQ, 2023a).
 
 Dans un contexte de changements climatiques et de transition numérique en agriculture, l'anticipation fiable des rendements constitue un enjeu stratégique pour la sécurité alimentaire et les programmes d'assurance récolte (FADQ, MAPAQ).
 
@@ -89,7 +91,11 @@ L'étude couvre la **région administrative de la Montérégie** (sud du Québec
 | LAI | Estimé via NDVI ou modèle biophysique Sentinel-2 | Fang et al. (2019) |
 | VV / VH | Rétrodiffusion SAR Sentinel-1 (après correction radiométrique et filtrage speckle) | Veloso et al. (2017) |
 
-Le masquage des nuages est effectué via les bandes **QA60**, **SCL** et l'algorithme `s2cloudless`. La collection `COPERNICUS/S2_SR_HARMONIZED` garantit la cohérence radiométrique sur l'ensemble de la période. Des **composites mensuels** (juin, juillet, août) ont été générés par parcelle pour couvrir les phases phénologiques clés (croissance végétative, floraison, remplissage des grains).
+Le masquage des nuages a été effectué via les bandes **QA60**, **SCL** et l'algorithme `s2cloudless`. La collection `COPERNICUS/S2_SR_HARMONIZED` garantit la cohérence radiométrique sur l'ensemble de la période.
+
+> En janvier 2022, l'ESA a introduit la version de traitement 04.00 de Sentinel-2, modifiant les valeurs de réflectance de surface dans plusieurs bandes spectrales avec des écarts pouvant atteindre ±5 %. Sans harmonisation, ces discontinuités radiométriques auraient introduit des biais systématiques dans les séries temporelles de NDVI et d'EVI calculées sur 2010–2023 (ESA, 2022).
+
+Des **composites mensuels** (juin, juillet, août) ont été générés par parcelle pour couvrir les phases phénologiques clés (croissance végétative, floraison, remplissage des grains).
 
 ### Rotation culturale (2010–2023)
 
@@ -115,7 +121,7 @@ Le masquage des nuages est effectué via les bandes **QA60**, **SCL** et l'algor
 ### Prétraitement des données
 
 - **Valeurs manquantes** : imputation par `SimpleImputer` (moyenne) ; interpolation temporelle et validation croisée entre stations voisines pour les données climatiques
-- **Normalisation** : `StandardScaler` + méthode min-max pour les variables continues
+- **Normalisation** : `StandardScaler` pour les variables continues ; mise à l'échelle min-max (0, 1) appliquée en complément pour le TabResNet afin de satisfaire les contraintes de convergence des architectures neuronales profondes
 - **Encodage** : `LabelEncoder` pour les variables catégorielles
 - **Variables de rotation** : `crop_type_lag1`, `is_monoculture`, `consec_corn` générées après masquage dynamique maïs/soya dans GEE
 - **Division temporelle** : 70 % entraînement (2010–2020 → **110 observations**) / 30 % test (2021–2023 → **30 observations**)
@@ -137,7 +143,9 @@ Le masquage des nuages est effectué via les bandes **QA60**, **SCL** et l'algor
 | SVM | GridSearchCV 5 plis + GroupKFold par champ (TimeSeriesSplit) | — |
 | TabResNet | GroupShuffleSplit 80/20 par champ | — |
 
-Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année complète du jeu d'entraînement, constituant une contrainte plus exigeante que la validation croisée classique. Le SVM et le TabResNet sont exclus du LOYO en raison respectivement de l'instabilité des estimations sur données de taille modérée et d'une convergence précoce instable sur n=140 observations.
+Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année complète du jeu d'entraînement, constituant une contrainte plus exigeante que la validation croisée classique. Le SVM et le TabResNet ont été exclus du LOYO en raison de l'instabilité des estimations documentée pour des effectifs inférieurs à leurs seuils de stabilité respectifs (plusieurs centaines d'observations pour le SVM selon Kamir et al., 2020 ; plusieurs milliers pour le TabResNet selon Gorishniy et al., 2021). Aucun test préliminaire empirique n'a été conduit pour vérifier cette instabilité, ce qui constitue une limite méthodologique à adresser dans les travaux ultérieurs.
+
+> Une approche alternative aurait consisté à appliquer un sous-échantillonnage bootstrap sur les 130 observations disponibles à chaque itération LOYO pour le SVM et le TabResNet, afin de quantifier empiriquement le seuil d'instabilité propre à chaque architecture (He & Ma, 2013).
 
 **Métriques** : R², RMSE (t/ha), MAE (t/ha), erreur relative (% du rendement moyen FADQ = 11,5 t/ha)
 
@@ -158,6 +166,8 @@ Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année
 
 > XGBoost améliore la précision d'environ **31 % (RMSE)** et **39 % (MAE)** par rapport au Random Forest. L'écart entre XGBoost et SVM représente une réduction de l'erreur relative de l'ordre de **54 %**.
 
+> **Note sur l'incertitude des métriques** : sur un ensemble de test de n = 30 observations, l'incertitude d'estimation du R² peut atteindre 0,10 à 0,15 point selon le degré d'hétéroscédasticité des résidus (Draper & Smith, 1998). Les valeurs du R² pour XGBoost (0,785) et RF (0,545) présentent une zone d'incertitude qui se chevauchent partiellement lorsque la dispersion des résidus est irrégulière entre les plages de rendement. Cette instabilité des métriques sur petit échantillon renforce la pertinence du recours à la validation LOYO, dont les 14 itérations indépendantes produisent des estimations d'erreur statistiquement plus robustes que la partition temporelle 70/30.
+
 ### Validation LOYO — estimations temporelles conservatrices
 
 | Modèle | MAE LOYO par champ (t/ha) | RMSE LOYO par champ (t/ha) |
@@ -166,6 +176,21 @@ Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année
 | Random Forest | 1,15 – 2,08 | 1,45 – 2,30 |
 
 > Ces valeurs, nettement supérieures à celles de la validation croisée, reflètent la difficulté à généraliser sur des **années climatiquement non observées** et constituent des estimations plus représentatives de la performance réelle en conditions opérationnelles. Le nombre d'années de maïs par champ varie de 7 (F3, F7) à 10 (F5, F10) selon la rotation.
+
+### Synthèse de l'analyse des résidus — quatre modèles
+
+| Caractéristique | XGBoost | RF | TabResNet | SVM |
+|---|---|---|---|---|
+| Moyenne des résidus (t/ha) | 0,06 | 0,09 | 0,20 | −0,19 |
+| Plage principale des résidus (t/ha) | −1,0 à +1,0 | −1,5 à +1,5 | −1,0 à +2,0 | −1,0 à +1,0 |
+| Résidus extrêmes observés (t/ha) | −2,1 ; +2,5 | −3,1 ; −2,6 | −2,3 ; +2,8 | +2,5 ; −4,0 |
+| Biais directionnel | Faible surestimation | Faible surestimation | Surestimation modérée des faibles rendements | Sous-estimation marquée des rendements élevés |
+| Hétéroscédasticité | Faible | Modérée | Modérée | Élevée |
+| Concentration des extrêmes | 10–11 t/ha prédit | 11,5–12 t/ha prédit | 10–11 t/ha prédit | 12,0–12,5 t/ha prédit |
+
+> **Lecture du biais directionnel** : un résidu positif (observé − prédit > 0) indique que le modèle prédit en dessous de la valeur observée (surestimation de l'erreur). Un résidu négatif indique que le modèle prédit au-dessus de la valeur observée (sous-estimation de l'observé, soit une prédiction trop haute). XGBoost et RF surestiment légèrement ; TabResNet surestime davantage sur les faibles rendements ; le SVM sous-estime structurellement les rendements élevés, avec des résidus négatifs atteignant −4,0 t/ha entre 12,0 et 12,5 t/ha prédits.
+
+L'analyse comparative révèle que XGBoost présente la distribution de résidus la plus resserrée (RMSE = 0,63 t/ha, bande ±RMSE la plus étroite des quatre modèles) avec une quasi-symétrie en cloche confirmant l'absence de biais directionnel systématique. Le RF affiche une asymétrie à queue gauche prononcée (jusqu'à −3,1 t/ha) et une tendance décroissante des résidus reflétant la régression vers la moyenne propre au bagging. Le TabResNet présente le biais moyen le plus élevé (+0,20 t/ha) avec une queue droite s'étendant jusqu'à +3,0 t/ha, signe d'une surestimation concentrée sur les faibles rendements prédits. Le SVM affiche la dispersion la plus élevée (RMSE = 1,38 t/ha) et une distribution aplatie avec des résidus extrêmes négatifs localisés dans la plage 12,0–12,5 t/ha prédit, traduisant une incapacité structurelle à reproduire les rendements élevés.
 
 ### Variables les plus influentes — analyse SHAP (XGBoost)
 
@@ -186,9 +211,9 @@ Le protocole **Leave-One-Year-Out (LOYO)** exclut à tour de rôle chaque année
 - Les parcelles en **rotation maïs–soya** (F1, F3, F5, F7, F9) présentent des MAE médianes < 0,3 t/ha vs 0,5–0,7 t/ha pour les parcelles en monoculture plus fréquente
 - Le **drainage du sol** est déterminant : 9,5 t/ha sur sols à drainage excessif (SRE) contre 12,0 t/ha sur sols à drainage subaquatique (SUB)
 - La variabilité spatiale s'aligne avec les données FADQ : zones productives au centre/nord Montérégie (12–13 t/ha), moins productives au sud-ouest (<10 t/ha)
-- Le RF tend à **sous-estimer les rendements élevés** (>12,5 t/ha) en raison de l'effet de moyennage propre au bagging
-- Le TabResNet converge dès l'époque 5 et compresse les prédictions vers la moyenne — stable mais peu discriminant
-- Le SVM présente une hétéroscédasticité significative et une pente de régression observé/prédit de 0,25
+- Le RF tend à **sous-estimer les rendements élevés** (>12,5 t/ha) en raison de l'effet de moyennage propre au bagging (Breiman, 2001)
+- Le TabResNet converge dès l'époque 5 et compresse les prédictions vers la moyenne — stable mais peu discriminant sur les extrêmes
+- Le SVM présente une hétéroscédasticité élevée et une pente de régression observé/prédit de 0,25
 
 ---
 
@@ -228,12 +253,11 @@ ESSAI_GAE724/
 │   └── visualization.ipynb      # Visualisations des résultats et SHAP
 │
 ├── results/                      # Résultats et sorties
-│   ├── maps/                    # Cartes de rendement prédit
 │   ├── metrics/                 # Métriques de performance (R², RMSE, MAE)
 │   └── shap/                    # Analyses SHAP (importance des variables)
 │
 └── docs/
-    └── essai_GAE724_final.pdf   # Document de maîtrise complet (M.Sc., jan. 2026)
+    └── essai_GAE724_version_finale_IB.pdf   # Document de maîtrise complet (M.Sc., jan. 2026)
 ```
 
 ---
@@ -344,13 +368,15 @@ shap.plots.beeswarm(shap_values)
 ## Limites identifiées
 
 - **Taille du jeu de données** : 140 observations (10 parcelles × 14 ans), dont 110 en entraînement et 30 en test. Les seuils de stabilité documentés sont de 200–500 observations pour RF/XGBoost, plusieurs centaines pour le SVM, et plusieurs milliers pour le TabResNet — tous les modèles opèrent en deçà de leur seuil optimal.
-- **Ensemble de test réduit** : 30 observations (3 par champ, 2021–2023). Une seule année climatiquement atypique suffit à dégrader partiellement les métriques ; la validation LOYO fournit des estimations plus représentatives.
+- **Incertitude des métriques sur petit échantillon** : sur n = 30 observations en test, l'incertitude d'estimation du R² peut atteindre 0,10 à 0,15 point selon le degré d'hétéroscédasticité des résidus. Les métriques doivent être interprétées comme des indicateurs comparatifs relatifs plutôt que comme des mesures absolues de généralisation (Draper & Smith, 1998).
+- **Comparaison asymétrique des modèles** : le SVM et le TabResNet n'ont pas été soumis au protocole LOYO, rendant leur comparaison avec RF et XGBoost partiellement déséquilibrée. Aucun test empirique préliminaire n'a vérifié cette instabilité.
 - **Résolution spatiale** : Sentinel-2 (10 m) et Landsat (30 m) ne capturent pas la variabilité intraparcellaire dans les zones à forte hétérogénéité pédologique.
-- **Couverture nuageuse** : Discontinuités temporelles pendant les phases phénologiques clés (levée, floraison, remplissage des grains), atténuées par `s2cloudless` et la collection harmonisée Sentinel-2 SR.
-- **Variables agronomiques absentes** : Densité de semis, type d'hybride, fertilisation azotée — leur intégration pourrait améliorer le R² de 10 à 20 points de pourcentage.
-- **Rendement historique moyen par parcelle non intégré** : Disponible dans la base FADQ, il constitue l'un des prédicteurs les plus informatifs du rendement futur et une priorité pour les travaux ultérieurs.
-- **Données terrain non intégrées** : La campagne de terrain de l'été 2025 (rugosité de surface, humidité du sol, biomasse) constitue une opportunité concrète pour calibrer les indices satellitaires et valider indépendamment les prédictions.
-- **Absence de validation spatiale indépendante** : La généralisation à des parcelles hors du jeu d'entraînement reste à établir.
+- **Couverture nuageuse** : discontinuités temporelles pendant les phases phénologiques clés (levée, floraison, remplissage des grains), atténuées par `s2cloudless` et la collection harmonisée Sentinel-2 SR.
+- **Variables agronomiques absentes** : densité de semis, type d'hybride, fertilisation azotée — leur intégration pourrait améliorer le R² de 10 à 20 points de pourcentage.
+- **Rendement historique moyen par parcelle non intégré** : disponible dans la base FADQ, il constitue l'un des prédicteurs les plus informatifs du rendement futur et une priorité pour les travaux ultérieurs.
+- **Données terrain non intégrées** : la campagne de terrain de l'été 2025 (rugosité de surface, humidité du sol, biomasse) constitue une opportunité concrète pour calibrer les indices satellitaires et valider indépendamment les prédictions.
+- **Absence de validation spatiale indépendante** : la généralisation à des parcelles hors du jeu d'entraînement reste à établir.
+- **Absence de carte de prédiction spatiale** : la production d'une carte de rendement prédit à l'échelle régionale reste à réaliser pour pleinement valoriser la dimension géospatiale de l'étude.
 
 ---
 
@@ -361,12 +387,13 @@ shap.plots.beeswarm(shap_values)
 - Enrichir le jeu de données avec de nouvelles parcelles et des données FADQ additionnelles
 - Ajouter le **rendement historique moyen par parcelle** comme variable d'entrée (priorité méthodologique)
 - Intégrer des variables agronomiques détaillées (type d'hybride, densité de semis, fertilisation azotée) et des variables climatiques cumulatives (degrés-jours, cumuls par stade phénologique)
+- Produire une **carte de rendement prédit** à l'échelle régionale pour compléter la dimension géospatiale de l'étude
 - Exploiter les images drone multispectrales pour calibration locale à l'échelle intraparcellaire
 
 ### Moyen terme
 - Modèles hybrides : **XGBoost-NN**, **RF-DNN** pour combiner stabilité et flexibilité
 - **Validation spatiale par blocs** (spatial block cross-validation) pour évaluer la généralisation hors-domaine
-- Quantification des incertitudes prédictives par bootstrap
+- Quantification des incertitudes prédictives par bootstrap, notamment pour les seuils d'instabilité du SVM et du TabResNet en contexte LOYO
 - Méthodes d'explicabilité locale complémentaires (**LIME**)
 - Séries Sentinel-2 plus denses couvrant l'ensemble du cycle cultural
 
@@ -384,14 +411,16 @@ shap.plots.beeswarm(shap_values)
 - Breiman, L. (2001). Random Forests. *Machine Learning*, 45(1), 5–32.
 - Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. *Proceedings KDD*, 785–794.
 - Cortes, C., & Vapnik, V. (1995). Support-vector networks. *Machine Learning*, 20(3), 273–297.
+- Draper, N. R., & Smith, H. (1998). *Applied Regression Analysis* (3rd ed.). Wiley.
 - Fang, H., et al. (2019). An Overview of Global Leaf Area Index (LAI). *Reviews of Geophysics*, 57(3), 739–799.
 - Gorishniy, Y., et al. (2021). Revisiting Deep Learning Models for Tabular Data. *NeurIPS*, 34.
+- He, H., & Ma, Y. (2013). *Imbalanced Learning: Foundations, Algorithms, and Applications*. Wiley-IEEE Press.
 - Huber, F., et al. (2022). Extreme Gradient Boosting for yield estimation compared with Deep Learning approaches. *Computers and Electronics in Agriculture*, 202, 107346.
 - Jeong, J. H., et al. (2016). Random Forests for Global and Regional Crop Yield Predictions. *PLOS ONE*, 11(6), e0156571.
 - Kang, Y., et al. (2020). Comparative assessment of environmental variables and machine learning algorithms for maize yield prediction in the US Midwest. *Environmental Research Letters*, 15(6), 064005.
 - Kamir, E., et al. (2020). Estimating wheat yields in Australia using climate records, satellite image time series and machine learning methods. *ISPRS Journal*, 160, 124–135.
 - Khaki, S., & Wang, L. (2019). Crop Yield Prediction Using Deep Neural Networks. *Frontiers in Plant Science*, 10.
-- Kuhn, M., & Johnson, K. (2013). Applied Predictive Modeling. Springer.
+- Kuhn, M., & Johnson, K. (2013). *Applied Predictive Modeling*. Springer.
 - Lundberg, S. M., & Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions. *NeurIPS*, 30.
 - Roberts, D. R., et al. (2017). Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure. *Ecography*, 40(8), 913–929.
 - Shahhosseini, M., et al. (2020). Forecasting Corn Yield With Machine Learning Ensembles. *Frontiers in Plant Science*, 11.
@@ -411,4 +440,4 @@ shap.plots.beeswarm(shap_values)
 
 ---
 
-*Dernière mise à jour : Janvier 2026*
+*Dernière mise à jour : Avril 2026*
