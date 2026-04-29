@@ -13,10 +13,12 @@ Ce projet développe une approche intégrée combinant la **télédétection mul
 
 Il s'agit, à notre connaissance, de l'une des **premières applications combinant explicitement Sentinel-1, Sentinel-2, Landsat et des indicateurs de rotation culturale** dans un cadre d'apprentissage supervisé à l'échelle régionale en Montérégie.
 
-Essai de maîtrise (M.Sc.) présenté au **Département de géomatique appliquée
-Faculté des lettres et sciences humaines
-Université de Sherbrooke**
-Avril 2026.
+Essai de maîtrise (M.Sc.) présenté au 
+
+**Département de géomatique appliquée**
+**Faculté des lettres et sciences humaines**
+**Université de Sherbrooke**
+**Avril 2026**
 
 **Jury d'évaluation**
 
