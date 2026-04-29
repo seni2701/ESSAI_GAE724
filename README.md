@@ -123,7 +123,7 @@ Des **composites mensuels** (juin, juillet, août) ont été générés par parc
 - **Valeurs manquantes** : imputation par `SimpleImputer` (moyenne) ; interpolation temporelle et validation croisée entre stations voisines pour les données climatiques
 - **Normalisation** : `StandardScaler` pour les variables continues ; mise à l'échelle min-max (0, 1) appliquée en complément pour le TabResNet afin de satisfaire les contraintes de convergence des architectures neuronales profondes
 - **Encodage** : `LabelEncoder` pour les variables catégorielles
-- **Variables de rotation** : `crop_type_lag1`, `is_monoculture`, `consec_corn` générées après masquage dynamique maïs/soya dans GEE
+- **Variables de rotation** : `crop_type_lag1`, `maïs_mono`, `maïs_rot` générées après masquage dynamique maïs/soya dans GEE
 - **Division temporelle** : 70 % entraînement (2010–2020 → **110 observations**) / 30 % test (2021–2023 → **30 observations**)
 
 ### Modèles testés et hyperparamètres
